@@ -1,6 +1,7 @@
 let deck = []
 let board = []
 let discard = []
+let roundTime
 let lastPick
 let lastBoard
 const cardBackgrounds = new Object
@@ -21,9 +22,9 @@ function init() {
   deck = []
   board = []
 
-  const x = [color('red'), color('green'), color('blue')].forEach(c => {
+  const x = [color('rgb(204, 102, 0)'), color('rgb(0, 204, 102)'), color('rgb(102, 0, 204)')].forEach(c => {
     Object.keys(Fill).forEach(f => {
-      const y = ['A', 'B', 'C'].forEach(l => {
+      const y = ['X', 'Y', 'Z'].forEach(l => {
         for (let n = 1; n <= 3; n++) {
           deck.push(new Card(l, n, f, c))
         }
@@ -46,24 +47,26 @@ function clearBoard() {
 
   lastBoard = minute()
   lastPick = second()
+  roundTime = 60
 }
 
 function draw() {
   clear()
   background(255)
 
-  if (minute() != lastBoard) clearBoard()
-
   if (second() != lastPick) {
     if (board.length < 12) {
       board.push(deck.shift())
     }
     lastPick = second()
+    if (roundTime-- == 0) {
+      clearBoard()
+    }
   }
 
   cardBackgrounds[Fill.Striped] = createStripedBackground()
   cardBackgrounds[Fill.Checker] = createCheckerBackground()
-  cardBackgrounds[Fill.Solid] = createSolidBackground()
+  cardBackgrounds[Fill.Wave] = createWaveBackground()
   drawBoard()
   drawCountdown()
 }
@@ -90,9 +93,10 @@ function createStripedBackground() {
   return cnv
 }
 
-function createSolidBackground() {
+function createWaveBackground() {
   const w = width * 2 / 7
   const h = height / 6
+  const lineWidth = height / 50
 
   const cnv = createGraphics(w, h)
   const ctx = cnv.canvas.getContext('2d')
@@ -100,8 +104,20 @@ function createSolidBackground() {
   cnv.rect(0, 0, w, h, height / 60)
   ctx.clip()
 
-  let dc = 50 * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
-  cnv.background(180 + dc)
+  let da = lerp(0, 2 * PI, (millis() % (2*animationSpeed)) / (2 * animationSpeed))
+  cnv.strokeWeight(lineWidth)
+  cnv.stroke(color('#AAA'))
+  cnv.noFill()
+  let y = -h * 2
+  for (let i = 0; i < 20; i++) {
+    cnv.beginShape()
+    for (let x = -w; x < 2 * w; x += 5) {
+      let a = lerp(0, 12 * PI, (x + w)) / (3 * w) - da
+      cnv.vertex(x, y + lineWidth * sin(a))
+    }
+    cnv.endShape()
+    y += 2 * lineWidth
+  }
   return cnv
 }
 
@@ -133,10 +149,10 @@ function createCheckerBackground() {
 
 function drawBoard() {
   let x = -width / 6
-  let y = height / 4
+  let y
   board.forEach((c, i) => {
     if (i % 4 == 0) {
-      y = height / 5
+      y = height / 10
       x += width / 3
     }
     c.draw(x, y)
@@ -147,13 +163,14 @@ function drawBoard() {
 function drawCountdown() {
   textStyle(NORMAL)
   textSize(height / 25)
-  fill(color('#000'))
-  noStroke()
-  text(60 - second(), 20, 20)
+  noFill()
+  strokeWeight(1)
+  stroke(color('black'))
+  text(roundTime, 20, height - 20)
 }
 
 const Fill = {
-  Solid: 'Solid',
+  Wave: 'Wave',
   Striped: 'Striped',
   Checker: 'Checker'
 }
@@ -169,6 +186,7 @@ class Card {
   draw(x, y) {
     image(cardBackgrounds[this.fill], x, y)
     stroke(this.color)
+    strokeWeight(weightOfStroke)
     noFill()
     rect(x, y, 2 * width / 7, height / 6, height / 60)
 
