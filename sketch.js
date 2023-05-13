@@ -5,6 +5,7 @@ let lastPick
 let lastBoard
 const cardBackgrounds = new Object
 const weightOfStroke = 5
+const animationSpeed = 5000
 
 function setup() {
   createCanvas(500, 500)
@@ -61,6 +62,8 @@ function draw() {
   }
 
   cardBackgrounds[Fill.Striped] = createStripedBackground()
+  cardBackgrounds[Fill.Checker] = createCheckerBackground()
+  cardBackgrounds[Fill.Solid] = createSolidBackground()
   drawBoard()
   drawCountdown()
 }
@@ -75,13 +78,54 @@ function createStripedBackground() {
 
   cnv.rect(0, 0, w, h, height / 60)
   ctx.clip()
-  
+
   ctx.rotate(PI / 4)
   cnv.strokeWeight(lineWidth)
-  cnv.stroke(color('#000'))
-  let y = -h * 2 + lerp(0, 2 * lineWidth, (millis() % 1000) / 1000)
+  cnv.stroke(color('#AAA'))
+  let y = -h * 2 + lerp(0, 2 * lineWidth, (millis() % animationSpeed) / animationSpeed)
   for (let i = 0; i < 20; i++) {
     cnv.line(-w, y, 2 * w, y)
+    y += 2 * lineWidth
+  }
+  return cnv
+}
+
+function createSolidBackground() {
+  const w = width * 2 / 7
+  const h = height / 6
+
+  const cnv = createGraphics(w, h)
+  const ctx = cnv.canvas.getContext('2d')
+
+  cnv.rect(0, 0, w, h, height / 60)
+  ctx.clip()
+
+  let dc = 50 * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
+  cnv.background(180 + dc)
+  return cnv
+}
+
+function createCheckerBackground() {
+  const w = width * 2 / 7
+  const h = height / 6
+  const lineWidth = height / 50
+
+  const cnv = createGraphics(w, h)
+  const ctx = cnv.canvas.getContext('2d')
+
+  cnv.rect(0, 0, w, h, height / 60)
+  ctx.clip()
+
+  ctx.rotate(PI / 4)
+  cnv.strokeWeight(lineWidth)
+  cnv.stroke(color('#AAA'))
+  let y = -h * 2
+  let dr = lineWidth / 2 * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
+  for (let i = 0; i < 20; i++) {
+    for (let x = 0; x < w; x += 2 * lineWidth) {
+      cnv.circle(x, y, dr + lineWidth / 3)
+      dr *= -1
+    }
     y += 2 * lineWidth
   }
   return cnv
@@ -109,9 +153,9 @@ function drawCountdown() {
 }
 
 const Fill = {
-  Empty: 'Empty',
+  Solid: 'Solid',
   Striped: 'Striped',
-  Bubbles: 'Bubbles'
+  Checker: 'Checker'
 }
 
 class Card {
@@ -123,18 +167,10 @@ class Card {
   }
 
   draw(x, y) {
+    image(cardBackgrounds[this.fill], x, y)
     stroke(this.color)
-    if (this.fill === Fill.Empty) {
-      fill(color('#000'))
-      rect(x, y, 2 * width / 7, height / 6, height / 60)
-    } else if (this.fill === Fill.Bubbles) {
-      fill(color('#888'))
-      rect(x, y, 2 * width / 7, height / 6, height / 60)
-    } else if (this.fill === Fill.Striped) {
-      image(cardBackgrounds[Fill.Striped], x, y)
-      noFill()
-      rect(x, y, 2 * width / 7, height / 6, height / 60)
-    }
+    noFill()
+    rect(x, y, 2 * width / 7, height / 6, height / 60)
 
     textSize(height / 9)
     textStyle(BOLD)
