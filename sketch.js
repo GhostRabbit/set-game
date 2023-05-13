@@ -3,10 +3,13 @@ let board = []
 let discard = []
 let lastPick
 let lastBoard
+const cardBackgrounds = new Object
+const weightOfStroke = 5
 
 function setup() {
   createCanvas(500, 500)
   rectMode(CENTER)
+  imageMode(CENTER)
   textAlign(CENTER, CENTER)
   init()
   clearBoard()
@@ -57,8 +60,31 @@ function draw() {
     lastPick = second()
   }
 
+  cardBackgrounds[Fill.Striped] = createStripedBackground()
   drawBoard()
   drawCountdown()
+}
+
+function createStripedBackground() {
+  const w = width * 2 / 7
+  const h = height / 6
+  const lineWidth = height / 50
+
+  const cnv = createGraphics(w, h)
+  const ctx = cnv.canvas.getContext('2d')
+
+  cnv.rect(0, 0, w, h, height / 60)
+  ctx.clip()
+  
+  ctx.rotate(PI / 4)
+  cnv.strokeWeight(lineWidth)
+  cnv.stroke(color('#000'))
+  let y = -h * 2 + lerp(0, 2 * lineWidth, (millis() % 1000) / 1000)
+  for (let i = 0; i < 20; i++) {
+    cnv.line(-w, y, 2 * w, y)
+    y += 2 * lineWidth
+  }
+  return cnv
 }
 
 function drawBoard() {
@@ -78,8 +104,8 @@ function drawCountdown() {
   textStyle(NORMAL)
   textSize(height / 25)
   fill(color('#000'))
+  noStroke()
   text(60 - second(), 20, 20)
-
 }
 
 const Fill = {
@@ -97,20 +123,24 @@ class Card {
   }
 
   draw(x, y) {
-    textSize(height / 8)
-    textStyle(BOLD)
+    stroke(this.color)
     if (this.fill === Fill.Empty) {
       fill(color('#000'))
+      rect(x, y, 2 * width / 7, height / 6, height / 60)
     } else if (this.fill === Fill.Bubbles) {
       fill(color('#888'))
+      rect(x, y, 2 * width / 7, height / 6, height / 60)
     } else if (this.fill === Fill.Striped) {
-      fill(color('#FFF'))
+      image(cardBackgrounds[Fill.Striped], x, y)
+      noFill()
+      rect(x, y, 2 * width / 7, height / 6, height / 60)
     }
-    stroke(color('black'))
-    rect(x, y, 2 * width / 7, height / 6, height / 60)
 
+    textSize(height / 9)
+    textStyle(BOLD)
+    stroke(color('black'))
     fill(this.color)
-    noStroke()
+    strokeWeight(weightOfStroke)
     text(this.letter.repeat(this.count), x, y + 5)
   }
 }
