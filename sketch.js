@@ -10,11 +10,12 @@ let roundTime
 let lastPick
 const cardDimentions = {}
 const cardBackgrounds = {}
-const weightOfStroke = 5
+let weightOfStroke
 const animationSpeed = 5000
 
 function setup() {
-  createCanvas(windowWidth, windowHeight)
+  const cnv = createCanvas(windowWidth, windowHeight)
+  cnv.style('display', 'block') // Hack hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
   rectMode(CENTER)
   imageMode(CENTER)
   init()
@@ -37,15 +38,15 @@ function init() {
   })
   deck = shuffle(deck)
 
-  updateCardDimensions()
+  updateDimensions()
 
   initGraphics()
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight)
-  updateCardDimensions()
-  initGraphics()  
+  updateDimensions()
+  initGraphics()
 }
 
 function initGraphics() {
@@ -54,11 +55,13 @@ function initGraphics() {
   cardBackgrounds[Fill.Wave] = createCardGraphics(cardBackgrounds[Fill.Wave]) // Can prolly be precalculated
 }
 
-function updateCardDimensions() {
+function updateDimensions() {
   cardDimentions.w = width * 2 / 7
   cardDimentions.h = height / 6
-  cardDimentions.lineWidth = height / 50
-  cardDimentions.corner = height / 60
+  cardDimentions.lineWidth = (height + width) / 100
+  cardDimentions.corner = (height + width) / 120
+  cardDimentions.text = min(cardDimentions.h / 2, cardDimentions.w / 3)
+  weightOfStroke = (height + width) / 200
 }
 
 function mouseClicked(event) {
@@ -115,7 +118,6 @@ function isSetCorrect([c1, c2, c3]) {
   const color = countUniqes(c1.fill, c2.fill, c3.fill) != 2
   return letter && count && fill && color
 }
-
 
 function pickCardFromBoard(i) {
   const c = board.cards[i]
@@ -207,24 +209,25 @@ function updateStripedBackground([cnv, ctx]) {
 function updateWaveBackground([cnv, ctx]) {
   const w = cardDimentions.w
   const h = cardDimentions.h
-  const lineWidth = cardDimentions.lineWidth
+  const lw = cardDimentions.lineWidth
 
   cnv.reset()
   cnv.background(255)
 
   let da = lerp(0, 2 * PI, (millis() % (2 * animationSpeed)) / (2 * animationSpeed))
-  cnv.strokeWeight(lineWidth)
+  cnv.strokeWeight(lw)
   cnv.stroke(color('#AAA'))
   cnv.noFill()
-  let y = -lineWidth
-  for (let i = 0; i < 6; i++) {
+  const lines = 2 + h / lw
+  let y = -lw
+  for (let i = 0; i < lines; i++) {
     cnv.beginShape()
     for (let x = 0; x < w; x += 5) {
       let a = lerp(0, 2 * PI, (x + w)) / (3 * w) - da
-      cnv.vertex(x, y + lineWidth * sin(a))
+      cnv.vertex(x, y + lw * sin(a))
     }
     cnv.endShape()
-    y += 2 * lineWidth
+    y += 2 * lw
   }
   return [cnv, ctx]
 }
@@ -232,22 +235,21 @@ function updateWaveBackground([cnv, ctx]) {
 function updateCheckerBackground([cnv, ctx]) {
   const w = cardDimentions.w
   const h = cardDimentions.h
-  const lineWidth = cardDimentions.lineWidth
+  const lw = cardDimentions.lineWidth
 
   cnv.reset()
   cnv.background(255)
 
-  ctx.rotate(PI / 4)
-  cnv.strokeWeight(lineWidth)
-  cnv.stroke(color('#AAA'))
-  let y = -h * 2
-  let dr = lineWidth / 2 * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
-  for (let i = 0; i < 20; i++) {
-    for (let x = 0; x < w; x += 2 * lineWidth) {
-      cnv.circle(x, y, dr + lineWidth / 3)
-      dr *= -1
+  cnv.noStroke()
+  cnv.fill(color('#AAA'))
+  let dr = lw * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
+  for (let y = 0; y < h; y += 2 * lw) {
+    dr = -dr
+    let dr2 = dr
+    for (let x = 0; x < w; x += 2 * lw) {
+      cnv.circle(x, y, 1.5 * lw + dr2)
+      dr2 = -dr2
     }
-    y += 2 * lineWidth
   }
   return [cnv, ctx]
 }
@@ -345,7 +347,7 @@ class Card {
     noFill()
     rect(x, y, cardDimentions.w, cardDimentions.h, cardDimentions.corner)
 
-    textSize(height / 9)
+    textSize(cardDimentions.text)
     textStyle(BOLD)
     stroke(color('black'))
     fill(this.color)
