@@ -181,7 +181,7 @@ function updateWaveBackground([cnv, ctx]) {
   const lineWidth = cardDimentions.lineWidth
 
   cnv.reset()
-  cnv.background(255)
+  cnv.background(255) // Why is this needed for this background?
   cnv.rect(0, 0, w, h, cardBackgrounds.corner)
   ctx.clip()
 
@@ -189,10 +189,10 @@ function updateWaveBackground([cnv, ctx]) {
   cnv.strokeWeight(lineWidth)
   cnv.stroke(color('#AAA'))
   cnv.noFill()
-  let y = -h * 2
-  for (let i = 0; i < 20; i++) {
+  let y = -h * 2 + 18 * lineWidth
+  for (let i = 0; i < 4; i++) {
     cnv.beginShape()
-    for (let x = -w; x < 2 * w; x += 5) {
+    for (let x = -w / 2; x < 1.5 * w; x += 5) {
       let a = lerp(0, 12 * PI, (x + w)) / (3 * w) - da
       cnv.vertex(x, y + lineWidth * sin(a))
     }
