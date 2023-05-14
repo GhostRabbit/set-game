@@ -10,7 +10,6 @@ let roundTime
 let lastPick
 const cardDimentions = {}
 const cardBackgrounds = {}
-let weightOfStroke
 const animationSpeed = 5000
 
 function setup() {
@@ -59,9 +58,9 @@ function updateDimensions() {
   cardDimentions.w = width * 2 / 7
   cardDimentions.h = height / 6
   cardDimentions.lineWidth = (height + width) / 100
-  cardDimentions.corner = (height + width) / 120
+  cardDimentions.corner = (cardDimentions.h + cardDimentions.w) / 20
   cardDimentions.text = min(cardDimentions.h / 2, cardDimentions.w / 3)
-  weightOfStroke = (height + width) / 200
+  cardDimentions.stroke = cardDimentions.text / 8
 }
 
 function mouseClicked(event) {
@@ -176,7 +175,7 @@ function createCardGraphics(old) {
   const cnv = createGraphics(w, h)
   const ctx = cnv.canvas.getContext('2d')
 
-  cnv.rect(0, 0, w, h, cardBackgrounds.corner)
+  cnv.rect(0, 0, w, h, cardDimentions.corner)
   ctx.clip()
 
   return [cnv, ctx]
@@ -343,7 +342,7 @@ class Card {
     textAlign(CENTER, CENTER)
     image(cardBackgrounds[this.fill][0], x, y)
     stroke(this.color)
-    strokeWeight(weightOfStroke)
+    strokeWeight(cardDimentions.stroke)
     noFill()
     rect(x, y, cardDimentions.w, cardDimentions.h, cardDimentions.corner)
 
@@ -351,7 +350,7 @@ class Card {
     textStyle(BOLD)
     stroke(color('black'))
     fill(this.color)
-    strokeWeight(weightOfStroke)
+    strokeWeight(cardDimentions.stroke)
     text(this.letter.repeat(this.count), x, y + 5)
   }
 }
