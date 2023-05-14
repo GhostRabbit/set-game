@@ -14,10 +14,9 @@ const weightOfStroke = 5
 const animationSpeed = 5000
 
 function setup() {
-  createCanvas(500, 500)
+  createCanvas(windowWidth, windowHeight)
   rectMode(CENTER)
   imageMode(CENTER)
-  textAlign(CENTER, CENTER)
   init()
   clearBoard()
 }
@@ -38,15 +37,28 @@ function init() {
   })
   deck = shuffle(deck)
 
+  updateCardDimensions()
+
+  initGraphics()
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight)
+  updateCardDimensions()
+  initGraphics()  
+}
+
+function initGraphics() {
+  cardBackgrounds[Fill.Striped] = createCardGraphics(cardBackgrounds[Fill.Striped]) // Can prolly be precalculated
+  cardBackgrounds[Fill.Checker] = createCardGraphics(cardBackgrounds[Fill.Checker])
+  cardBackgrounds[Fill.Wave] = createCardGraphics(cardBackgrounds[Fill.Wave]) // Can prolly be precalculated
+}
+
+function updateCardDimensions() {
   cardDimentions.w = width * 2 / 7
   cardDimentions.h = height / 6
   cardDimentions.lineWidth = height / 50
   cardDimentions.corner = height / 60
-
-  // Init graphics
-  cardBackgrounds[Fill.Striped] = createCardGraphics()
-  cardBackgrounds[Fill.Checker] = createCardGraphics()
-  cardBackgrounds[Fill.Wave] = createCardGraphics()
 }
 
 function mouseClicked(event) {
@@ -71,10 +83,13 @@ function mouseClicked(event) {
 }
 
 function selectCard(i) {
+  // Deselect
   if (board.selected.includes(i)) {
     board.selected.splice(board.selected.indexOf(i), 1)
     return
   }
+
+  // Select
   board.selected.push(i)
   if (board.selected.length == 3) {
     pickSet(board.selected)
@@ -82,13 +97,18 @@ function selectCard(i) {
   }
 }
 
-function pickSet(selected) {
-  let set = [pickCardFromBoard(selected[0]), pickCardFromBoard(selected[1]), pickCardFromBoard(selected[2])]
-  set.correct = mark(set)
+function pickSet([c1, c2, c3]) {
+  let set = [pickCardFromBoard(c1), pickCardFromBoard(c2), pickCardFromBoard(c3)]
+  set.correct = isSetCorrect(set)
   board.sets.push(set)
 }
 
-function mark([c1, c2, c3]) {
+function isSetCorrect([c1, c2, c3]) {
+  function countUniqes(a, b, c) {
+    if (a == b && b == c) return 1
+    if (a != b && a != c && b != c) return 3
+    return 2
+  }
   const letter = countUniqes(c1.letter, c2.letter, c3.letter) != 2
   const count = countUniqes(c1.count, c2.count, c3.count) != 2
   const fill = countUniqes(c1.fill, c2.fill, c3.fill) != 2
@@ -96,11 +116,6 @@ function mark([c1, c2, c3]) {
   return letter && count && fill && color
 }
 
-function countUniqes(a, b, c) {
-  if (a == b && b == c) return 1
-  if (a != b && a != c && b != c) return 3
-  return 2
-}
 
 function pickCardFromBoard(i) {
   const c = board.cards[i]
@@ -150,27 +165,41 @@ function draw() {
   drawCountdown()
 }
 
-function createCardGraphics() {
-  const cnv = createGraphics(cardDimentions.w, cardDimentions.h)
-  return [cnv, cnv.canvas.getContext('2d')]
+function createCardGraphics(old) {
+  if (old) old[0].remove()
+
+  const w = cardDimentions.w
+  const h = cardDimentions.h
+
+  const cnv = createGraphics(w, h)
+  const ctx = cnv.canvas.getContext('2d')
+
+  cnv.rect(0, 0, w, h, cardBackgrounds.corner)
+  ctx.clip()
+
+  return [cnv, ctx]
 }
 
 function updateStripedBackground([cnv, ctx]) {
   const w = cardDimentions.w
   const h = cardDimentions.h
-  const lineWidth = cardDimentions.lineWidth
+  const lw = cardDimentions.lineWidth
+  const diag = sqrt(w * w + h * h)
 
   cnv.reset()
-  cnv.rect(0, 0, w, h, cardBackgrounds.corner)
-  ctx.clip()
+  cnv.background(255)
 
+  ctx.translate(w / 2, h / 2)
   ctx.rotate(PI / 4)
-  cnv.strokeWeight(lineWidth)
+  ctx.translate(-diag / 2, -diag / 2)
+
+  cnv.strokeWeight(lw)
   cnv.stroke(color('#AAA'))
-  let y = -h * 2 + lerp(0, 2 * lineWidth, (millis() % animationSpeed) / animationSpeed)
-  for (let i = 0; i < 20; i++) {
-    cnv.line(-w, y, 2 * w, y)
-    y += 2 * lineWidth
+  const lines = diag / lw
+  let y = lerp(0, 2 * lw, (millis() % animationSpeed) / animationSpeed)
+  for (let i = 0; i < lines; i++) {
+    cnv.line(0, y, diag, y)
+    y += 2 * lw
   }
   return [cnv, ctx]
 }
@@ -181,19 +210,17 @@ function updateWaveBackground([cnv, ctx]) {
   const lineWidth = cardDimentions.lineWidth
 
   cnv.reset()
-  cnv.background(255) // Why is this needed for this background?
-  cnv.rect(0, 0, w, h, cardBackgrounds.corner)
-  ctx.clip()
+  cnv.background(255)
 
   let da = lerp(0, 2 * PI, (millis() % (2 * animationSpeed)) / (2 * animationSpeed))
   cnv.strokeWeight(lineWidth)
   cnv.stroke(color('#AAA'))
   cnv.noFill()
-  let y = -h * 2 + 18 * lineWidth
-  for (let i = 0; i < 4; i++) {
+  let y = -lineWidth
+  for (let i = 0; i < 6; i++) {
     cnv.beginShape()
-    for (let x = -w / 2; x < 1.5 * w; x += 5) {
-      let a = lerp(0, 12 * PI, (x + w)) / (3 * w) - da
+    for (let x = 0; x < w; x += 5) {
+      let a = lerp(0, 2 * PI, (x + w)) / (3 * w) - da
       cnv.vertex(x, y + lineWidth * sin(a))
     }
     cnv.endShape()
@@ -208,8 +235,7 @@ function updateCheckerBackground([cnv, ctx]) {
   const lineWidth = cardDimentions.lineWidth
 
   cnv.reset()
-  cnv.rect(0, 0, w, h, height / 60)
-  ctx.clip()
+  cnv.background(255)
 
   ctx.rotate(PI / 4)
   cnv.strokeWeight(lineWidth)
@@ -223,7 +249,6 @@ function updateCheckerBackground([cnv, ctx]) {
     }
     y += 2 * lineWidth
   }
-  // ctx.pop()
   return [cnv, ctx]
 }
 
@@ -241,7 +266,7 @@ function drawBoard() {
     if (c) {
       c.draw(x, y, w, h)
       if (board.selected.includes(i)) {
-        const c = color('rgba(204,204,0,0.3)')
+        const c = color('rgba(204, 204, 0, 0.3)')
         fill(c)
         stroke(c)
         rect(x, y, w, h, cardBackgrounds.corner)
@@ -278,22 +303,24 @@ function drawScore() {
     score += s.correct ? 1 : -1
   })
   textStyle(NORMAL)
+  textAlign(RIGHT, BOTTOM)
   const size = height / 25
   textSize(size)
   noFill()
   strokeWeight(1)
   stroke(color('black'))
-  text(score + " p", width - size, height - 3 * size)
+  text(score + " p", width - size, height - 2 * size)
 }
 
 function drawCountdown() {
+  textAlign(RIGHT, BOTTOM)
   textStyle(NORMAL)
   const size = height / 25
   textSize(height / 25)
   noFill()
   strokeWeight(1)
   stroke(color('black'))
-  text(roundTime + " s", width - 1.5 * size, height - size)
+  text(roundTime + " s", width - size, height - size)
 }
 
 const Fill = {
@@ -311,6 +338,7 @@ class Card {
   }
 
   draw(x, y) {
+    textAlign(CENTER, CENTER)
     image(cardBackgrounds[this.fill][0], x, y)
     stroke(this.color)
     strokeWeight(weightOfStroke)
