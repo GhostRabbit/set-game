@@ -12,6 +12,7 @@ let player = {}
 const dimentions = {}
 const cardBackgrounds = {}
 const animationSpeed = 5000
+const playerColors = ['yellow', 'blue', 'green', 'red']
 
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight)
@@ -39,12 +40,12 @@ function init() {
 
   deck = shuffle(deck)
   player.score = 0
-  player.color = color('yellow')
+  player.color = color(playerColors[0])
   updateDimensions()
   initGraphics()
 
   // for (let i = 0; i < 6; i++)
-    // makeSet(deck.pop(), deck.pop(), deck.pop())
+  // makeSet(deck.pop(), deck.pop(), deck.pop())
 }
 
 function windowResized() {
@@ -88,6 +89,14 @@ function mouseClicked(event) {
   }
   if (result != -1) {
     selectCard(result)
+    return
+  }
+
+  // Swap player color?
+  if (width - dimentions.w < mx && mx < width
+    && height - dimentions.h < my && my < height) {
+    playerColors.push(playerColors.shift())
+    player.color = color(playerColors[0])
   }
 }
 
@@ -252,27 +261,36 @@ function drawSets() {
 
 function drawScore() {
   textStyle(NORMAL)
-  textAlign(RIGHT, BOTTOM)
-  const size = height / 25
-  textSize(size)
-  noFill()
+  textAlign(LEFT, BOTTOM)
+  const hsize = height / 25
+  textSize(hsize)
   strokeWeight(dimentions.stroke / 2)
-  stroke(color('black'))
-  fill(player.color)
-  text(player.score + "   ", width - dimentions.lineWidth, height - size - dimentions.lineWidth)
-  fill(color('white'))
-  text("p", width - dimentions.lineWidth, height - size - dimentions.lineWidth)
+  let strings = [[player.score + " ", color(player.color)],
+  ["p", color('white')]]
+  drawText(width - dimentions.ws / 2 - textWidth(player.score + " p"), height - hsize - dimentions.hs / 2, strings)
 }
 
+function drawText(x, y, text_array) {
+  var pos_x = x;
+  for (var i = 0; i < text_array.length; ++i) {
+    var part = text_array[i];
+    var t = part[0];
+    var c = part[1];
+    var w = textWidth(t);
+    fill(c);
+    text(t, pos_x, y);
+    pos_x += w;
+  }
+}
 function drawCountdown() {
-  textAlign(RIGHT, BOTTOM)
   textStyle(NORMAL)
-  const size = height / 25
+  textAlign(LEFT, BOTTOM)
   textSize(height / 25)
+  stroke(color('black'))
   fill(color('white'))
   strokeWeight(dimentions.stroke / 2)
-  stroke(color('black'))
-  text(roundTime + " s", width - dimentions.lineWidth, height - dimentions.lineWidth)
+  const string = roundTime + " s"
+  text(string, width - dimentions.ws / 2 - textWidth(string), height - dimentions.hs / 2)
 }
 
 const Fill = {
