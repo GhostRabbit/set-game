@@ -8,7 +8,8 @@ let board = {
 let discard = []
 let roundTime
 let lastPick
-const cardDimentions = {}
+let player = {}
+const dimentions = {}
 const cardBackgrounds = {}
 const animationSpeed = 5000
 
@@ -36,9 +37,9 @@ function init() {
     })
   })
   deck = shuffle(deck)
-
+  player.score = 0
+  player.color = color('yellow')
   updateDimensions()
-
   initGraphics()
 }
 
@@ -55,12 +56,14 @@ function initGraphics() {
 }
 
 function updateDimensions() {
-  cardDimentions.w = width * 2 / 7
-  cardDimentions.h = height / 6
-  cardDimentions.lineWidth = (height + width) / 100
-  cardDimentions.corner = (cardDimentions.h + cardDimentions.w) / 20
-  cardDimentions.text = min(cardDimentions.h / 2, cardDimentions.w / 3)
-  cardDimentions.stroke = cardDimentions.text / 8
+  dimentions.w = width * 2 / 7
+  dimentions.ws = (width - 3 * dimentions.w) / 3
+  dimentions.h = height / 6
+  dimentions.hs = (height / 10 + 3 * height / 5 + height / 10) / 4
+  dimentions.lineWidth = (height + width) / 100
+  dimentions.corner = (dimentions.h + dimentions.w) / 20
+  dimentions.text = min(dimentions.h / 2, dimentions.w / 3)
+  dimentions.stroke = dimentions.text / 8
 }
 
 function mouseClicked(event) {
@@ -101,8 +104,19 @@ function selectCard(i) {
 
 function pickSet([c1, c2, c3]) {
   let set = [pickCardFromBoard(c1), pickCardFromBoard(c2), pickCardFromBoard(c3)]
-  set.correct = isSetCorrect(set)
+  if (isSetCorrect(set)) {
+    set.correct = true
+    player.score++
+    resetTimer()
+  } else {
+    player.score--
+  }
+
+  set.playerColor = player.color
   board.sets.push(set)
+  if (board.sets.length > 6) {
+    board.sets.shift().forEach(c => discard.push())
+  }
 }
 
 function isSetCorrect([c1, c2, c3]) {
@@ -114,7 +128,7 @@ function isSetCorrect([c1, c2, c3]) {
   const letter = countUniqes(c1.letter, c2.letter, c3.letter) != 2
   const count = countUniqes(c1.count, c2.count, c3.count) != 2
   const fill = countUniqes(c1.fill, c2.fill, c3.fill) != 2
-  const color = countUniqes(c1.fill, c2.fill, c3.fill) != 2
+  const color = countUniqes(c1.color, c2.color, c3.color) != 2
   return letter && count && fill && color
 }
 
@@ -137,6 +151,10 @@ function clearBoard() {
   }
 
   lastPick = second()
+  resetTimer()
+}
+
+function resetTimer() {
   roundTime = 60
 }
 
@@ -145,9 +163,9 @@ function draw() {
   background(255)
 
   if (second() != lastPick) {
-    let firstEmpty = board.cards.indexOf(undefined)
-    if (firstEmpty != -1) {
-      board.cards[firstEmpty] = deck.shift()
+    let firstEmptySlot = board.cards.indexOf(undefined)
+    if (firstEmptySlot != -1) {
+      board.cards[firstEmptySlot] = deck.shift()
     }
     else if (board.cards.length < 12) {
       board.cards.push(deck.shift())
@@ -162,29 +180,118 @@ function draw() {
   cardBackgrounds[Fill.Checker] = updateCheckerBackground(cardBackgrounds[Fill.Checker])
   cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave])
   drawBoard()
+  drawSets()
   drawScore()
   drawCountdown()
+}
+
+
+function drawBoard() {
+  let x = (dimentions.w + dimentions.ws)/2
+  let y
+  const w = dimentions.w
+  const h = dimentions.h
+  board.bounds = []
+  board.cards.forEach((c, i) => {
+    if (i % 4 == 0) {
+      y = dimentions.hs/2
+      if ( i > 0) x += dimentions.w + dimentions.ws
+    }
+    if (c) {
+      c.draw(x, y, w, h)
+      if (board.selected.includes(i)) {
+        const c = color('rgba(204, 204, 0, 0.3)')
+        fill(c)
+        stroke(c)
+        rect(x, y, w, h, dimentions.corner)
+      }
+      board.bounds[i] = ({ x: x, y: y, w2: w / 2, h2: h / 2 })
+    }
+    y += dimentions.hs
+  })
+}
+
+function drawSets() {
+  let x = -width
+  let y
+  const w = dimentions.w
+  const h = dimentions.h
+
+  push()
+  translate(width / 24, height - height / 6)
+  // translate(dimentions.ws, 4*(dimentions.h + dimentions.hs))
+  scale(0.3)
+  board.sets.forEach((set, i) => {
+    if (i % 3 == 0) {
+      y = h / 2
+      x += 9 * width / 8
+    }
+    rectMode(CENTER)
+    set[0].draw(x, y)
+    set[1].draw(x + w, y)
+    set[2].draw(x + 2 * w, y)
+    stroke(set.playerColor)
+    noFill()
+    if (!set.correct) {
+      fill(color('rgba(255,0,0,0.25)'))
+    }
+    rect(x + w, y, w * 3, h, dimentions.corner)
+
+    y += h + dimentions.lineWidth
+  })
+  pop()
+}
+
+function drawScore() {
+  textStyle(NORMAL)
+  textAlign(RIGHT, BOTTOM)
+  const size = height / 25
+  textSize(size)
+  noFill()
+  strokeWeight(dimentions.stroke / 2)
+  stroke(color('black'))
+  fill(player.color)
+  text(player.score + "   ", width - dimentions.lineWidth, height - size - dimentions.lineWidth)
+  fill(color('white'))
+  text("p", width - dimentions.lineWidth, height - size - dimentions.lineWidth)
+}
+
+function drawCountdown() {
+  textAlign(RIGHT, BOTTOM)
+  textStyle(NORMAL)
+  const size = height / 25
+  textSize(height / 25)
+  fill(color('white'))
+  strokeWeight(dimentions.stroke / 2)
+  stroke(color('black'))
+  text(roundTime + " s", width - dimentions.lineWidth, height - dimentions.lineWidth)
+}
+
+const Fill = {
+  Wave: 'Wave',
+  Striped: 'Striped',
+  Checker: 'Checker'
 }
 
 function createCardGraphics(old) {
   if (old) old[0].remove()
 
-  const w = cardDimentions.w
-  const h = cardDimentions.h
+  const w = dimentions.w
+  const h = dimentions.h
 
   const cnv = createGraphics(w, h)
   const ctx = cnv.canvas.getContext('2d')
 
-  cnv.rect(0, 0, w, h, cardDimentions.corner)
+  cnv.rect(0, 0, w, h, dimentions.corner)
   ctx.clip()
 
   return [cnv, ctx]
 }
 
 function updateStripedBackground([cnv, ctx]) {
-  const w = cardDimentions.w
-  const h = cardDimentions.h
-  const lw = cardDimentions.lineWidth
+  const w = dimentions.w
+  const h = dimentions.h
+  const lw = dimentions.lineWidth
   const diag = sqrt(w * w + h * h)
 
   cnv.reset()
@@ -206,9 +313,9 @@ function updateStripedBackground([cnv, ctx]) {
 }
 
 function updateWaveBackground([cnv, ctx]) {
-  const w = cardDimentions.w
-  const h = cardDimentions.h
-  const lw = cardDimentions.lineWidth
+  const w = dimentions.w
+  const h = dimentions.h
+  const lw = dimentions.lineWidth
 
   cnv.reset()
   cnv.background(255)
@@ -232,9 +339,9 @@ function updateWaveBackground([cnv, ctx]) {
 }
 
 function updateCheckerBackground([cnv, ctx]) {
-  const w = cardDimentions.w
-  const h = cardDimentions.h
-  const lw = cardDimentions.lineWidth
+  const w = dimentions.w
+  const h = dimentions.h
+  const lw = dimentions.lineWidth
 
   cnv.reset()
   cnv.background(255)
@@ -242,92 +349,17 @@ function updateCheckerBackground([cnv, ctx]) {
   cnv.noStroke()
   cnv.fill(color('#AAA'))
   let dr = lw * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
-  for (let y = 0; y < h; y += 2 * lw) {
+  const rows = h / (2 * lw) + 1
+  const cols = w / (2 * lw) + 1
+  for (let row = 0; row < rows; row++) {
     dr = -dr
     let dr2 = dr
-    for (let x = 0; x < w; x += 2 * lw) {
-      cnv.circle(x, y, 1.5 * lw + dr2)
+    for (let col = 0; col < cols; col++) {
+      cnv.circle(2 * lw * col, 2 * lw * row, 1.5 * lw + dr2)
       dr2 = -dr2
     }
   }
   return [cnv, ctx]
-}
-
-function drawBoard() {
-  let x = -width / 6
-  let y
-  const w = cardDimentions.w
-  const h = cardDimentions.h
-  board.bounds = []
-  board.cards.forEach((c, i) => {
-    if (i % 4 == 0) {
-      y = height / 10
-      x += width / 3
-    }
-    if (c) {
-      c.draw(x, y, w, h)
-      if (board.selected.includes(i)) {
-        const c = color('rgba(204, 204, 0, 0.3)')
-        fill(c)
-        stroke(c)
-        rect(x, y, w, h, cardBackgrounds.corner)
-      }
-      board.bounds[i] = ({ x: x, y: y, w2: w / 2, h2: h / 2 })
-    }
-    y += height / 5
-  })
-
-  push()
-  translate(width / 24, height - height / 6)
-  scale(0.3)
-  x = -width
-  board.sets.forEach((set, i) => {
-    if (i % 3 == 0) {
-      y = h / 2
-      x += 9 * width / 8
-    }
-    set[0].draw(x, y)
-    set[1].draw(x + w, y)
-    set[2].draw(x + 2 * w, y)
-    if (!set.correct) {
-      fill(color('rgba(255, 0, 0, 0.2)'))
-      rect(x + w, y, w * 3, h)
-    }
-    y += h
-  })
-  pop()
-}
-
-function drawScore() {
-  let score = 0
-  board.sets.forEach(s => {
-    score += s.correct ? 1 : -1
-  })
-  textStyle(NORMAL)
-  textAlign(RIGHT, BOTTOM)
-  const size = height / 25
-  textSize(size)
-  noFill()
-  strokeWeight(1)
-  stroke(color('black'))
-  text(score + " p", width - size, height - 2 * size)
-}
-
-function drawCountdown() {
-  textAlign(RIGHT, BOTTOM)
-  textStyle(NORMAL)
-  const size = height / 25
-  textSize(height / 25)
-  noFill()
-  strokeWeight(1)
-  stroke(color('black'))
-  text(roundTime + " s", width - size, height - size)
-}
-
-const Fill = {
-  Wave: 'Wave',
-  Striped: 'Striped',
-  Checker: 'Checker'
 }
 
 class Card {
@@ -342,15 +374,15 @@ class Card {
     textAlign(CENTER, CENTER)
     image(cardBackgrounds[this.fill][0], x, y)
     stroke(this.color)
-    strokeWeight(cardDimentions.stroke)
+    strokeWeight(dimentions.stroke)
     noFill()
-    rect(x, y, cardDimentions.w, cardDimentions.h, cardDimentions.corner)
+    rect(x, y, dimentions.w, dimentions.h, dimentions.corner)
 
-    textSize(cardDimentions.text)
+    textSize(dimentions.text)
     textStyle(BOLD)
     stroke(color('black'))
     fill(this.color)
-    strokeWeight(cardDimentions.stroke)
+    strokeWeight(dimentions.stroke)
     text(this.letter.repeat(this.count), x, y + 5)
   }
 }
