@@ -15,7 +15,7 @@ const animationSpeed = 5000
 
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight)
-  cnv.style('display', 'block') // Hack hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
+  cnv.style('display', 'block') // Hack to hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
   rectMode(CENTER)
   imageMode(CENTER)
   init()
@@ -36,11 +36,15 @@ function init() {
       })
     })
   })
+
   deck = shuffle(deck)
   player.score = 0
   player.color = color('yellow')
   updateDimensions()
   initGraphics()
+
+  // for (let i = 0; i < 6; i++)
+    // makeSet(deck.pop(), deck.pop(), deck.pop())
 }
 
 function windowResized() {
@@ -59,7 +63,7 @@ function updateDimensions() {
   dimentions.w = width * 2 / 7
   dimentions.ws = (width - 3 * dimentions.w) / 3
   dimentions.h = height / 6
-  dimentions.hs = (height / 10 + 3 * height / 5 + height / 10) / 4
+  dimentions.hs = (height / 10 + 3 * height / 5 + height / 10) / 4 - height / 6
   dimentions.lineWidth = (height + width) / 100
   dimentions.corner = (dimentions.h + dimentions.w) / 20
   dimentions.text = min(dimentions.h / 2, dimentions.w / 3)
@@ -103,7 +107,11 @@ function selectCard(i) {
 }
 
 function pickSet([c1, c2, c3]) {
-  let set = [pickCardFromBoard(c1), pickCardFromBoard(c2), pickCardFromBoard(c3)]
+  makeSet(pickCardFromBoard(c1), pickCardFromBoard(c2), pickCardFromBoard(c3))
+}
+
+function makeSet(c1, c2, c3) {
+  let set = [c1, c2, c3]
   if (isSetCorrect(set)) {
     set.correct = true
     player.score++
@@ -187,15 +195,15 @@ function draw() {
 
 
 function drawBoard() {
-  let x = (dimentions.w + dimentions.ws)/2
+  let x = (dimentions.w + dimentions.ws) / 2
   let y
   const w = dimentions.w
   const h = dimentions.h
   board.bounds = []
   board.cards.forEach((c, i) => {
     if (i % 4 == 0) {
-      y = dimentions.hs/2
-      if ( i > 0) x += dimentions.w + dimentions.ws
+      y = dimentions.hs / 2 + h / 2
+      if (i > 0) x += dimentions.w + dimentions.ws
     }
     if (c) {
       c.draw(x, y, w, h)
@@ -207,37 +215,37 @@ function drawBoard() {
       }
       board.bounds[i] = ({ x: x, y: y, w2: w / 2, h2: h / 2 })
     }
-    y += dimentions.hs
+    y += dimentions.hs + h
   })
 }
 
 function drawSets() {
-  let x = -width
-  let y
   const w = dimentions.w
   const h = dimentions.h
+  let x = w / 2
+  let y
 
   push()
-  translate(width / 24, height - height / 6)
-  // translate(dimentions.ws, 4*(dimentions.h + dimentions.hs))
-  scale(0.3)
+  translate(dimentions.ws / 2, 4 * (h + dimentions.hs))
+  scale(1 / 3)
+  rectMode(CENTER)
   board.sets.forEach((set, i) => {
     if (i % 3 == 0) {
-      y = h / 2
-      x += 9 * width / 8
+      y = dimentions.hs / 2 + h / 2
+      if (i > 0) x += 3 * dimentions.ws + 3 * w
     }
-    rectMode(CENTER)
     set[0].draw(x, y)
     set[1].draw(x + w, y)
     set[2].draw(x + 2 * w, y)
-    stroke(set.playerColor)
     noFill()
+    strokeWeight(dimentions.stroke * 2)
+    stroke(set.playerColor)
     if (!set.correct) {
       fill(color('rgba(255,0,0,0.25)'))
     }
     rect(x + w, y, w * 3, h, dimentions.corner)
 
-    y += h + dimentions.lineWidth
+    y += dimentions.hs + h
   })
   pop()
 }
