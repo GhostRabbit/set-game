@@ -11,7 +11,7 @@ let lastPick
 let player = {}
 const dimensions = {}
 const cardBackgrounds = {}
-const animationSpeed = 15000
+const animationSpeed = 25000
 const playerColors = ["yellow", "blue", "green", "red"]
 
 function setup() {
@@ -357,17 +357,31 @@ function updateStripedBackground([cnv, ctx]) {
   cnv.reset()
   cnv.background(255)
 
-  ctx.translate(w / 2, h / 2)
-  ctx.rotate(PI / 4)
-  ctx.translate(-diag / 2, -diag / 2)
-
-  cnv.strokeWeight(lw)
-  cnv.stroke(color("#AAA"))
-  const lines = diag / lw
-  let y = lerp(0, 2 * lw, (millis() % animationSpeed) / animationSpeed)
-  for (let i = 0; i < lines; i++) {
-    cnv.line(0, y, diag, y)
-    y += 2 * lw
+  const cols = w / (4 * lw) + 1
+  const rows = h / lw + 1
+  let dy = lerp(
+    0,
+    2 * lw,
+    (millis() % animationSpeed) / animationSpeed
+  )
+  ctx.setLineDash([2 * lw, 2 * lw])
+  cnv.noStroke()
+  cnv.fill(color("#AAA"))
+  for (let j = -1; j <= rows; j++) {
+    const y = 2 * j * lw
+    for (let i = 0; i <= cols; i++) {
+      const x1 = w / 2 + i * 2 * lw
+      const x2 = w / 2 - i * 2 * lw
+      if (i == 0) {
+        cnv.triangle(w / 2, y - dy, w / 2 - lw, y + 2 * lw - dy, w / 2 + lw, y + 2 * lw - dy)
+      } else if (i % 2 == 0) {
+        cnv.triangle(x1, y - dy, x1 - lw, y + 2 * lw - dy, x1 + lw, y + 2 * lw - dy)
+        cnv.triangle(x2, y - dy, x2 - lw, y + 2 * lw - dy, x2 + lw, y + 2 * lw - dy)
+      } else {
+        cnv.triangle(x1, y + 2 * lw + dy, x1 - lw, y + dy, x1 + lw, y + dy)
+        cnv.triangle(x2, y + 2 * lw + dy, x2 - lw, y + dy, x2 + lw, y + dy)
+      }
+    }
   }
   return [cnv, ctx]
 }
