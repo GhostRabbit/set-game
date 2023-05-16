@@ -11,12 +11,13 @@ let lastPick
 let player = {}
 const dimensions = {}
 const cardBackgrounds = {}
-const animationSpeed = 5000
+const animationSpeed = 15000
 const playerColors = ["yellow", "blue", "green", "red"]
 
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight)
   cnv.style("display", "block") // Hack to hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
+  frameRate(15)
   rectMode(CENTER)
   imageMode(CENTER)
   init()
@@ -47,7 +48,6 @@ function init() {
   calculateColor()
   updateDimensions()
   initGraphics()
-
   // for (let i = 0; i < 6; i++)
   // makeSet(deck.pop(), deck.pop(), deck.pop())
 }
@@ -55,7 +55,7 @@ function init() {
 function calculateColor() {
   const c = color(playerColors[0])
   player.color = c
-  player.colorAlfa = color('rgba('+red(c)+','+ green(c)+','+ blue(c)+','+ 0.3+')')
+  player.colorAlfa = color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')')
 }
 
 function windowResized() {
@@ -117,6 +117,7 @@ function mouseClicked(event) {
     height - dimensions.h < my &&
     my < height
   ) {
+    0
     playerColors.push(playerColors.shift())
     calculateColor()
   }
@@ -137,8 +138,13 @@ function selectCard(i) {
   }
 }
 
-function pickSet([c1, c2, c3]) {
-  makeSet(pickCardFromBoard(c1), pickCardFromBoard(c2), pickCardFromBoard(c3))
+function pickSet([i1, i2, i3]) {
+  function pickCardFromBoard(i) {
+    const c = board.cards[i]
+    board.cards[i] = undefined
+    return c
+  }
+  makeSet(pickCardFromBoard(i1), pickCardFromBoard(i2), pickCardFromBoard(i3))
 }
 
 function makeSet(c1, c2, c3) {
@@ -154,7 +160,7 @@ function makeSet(c1, c2, c3) {
   set.playerColor = player.color
   board.sets.push(set)
   if (board.sets.length > 6) {
-    board.sets.shift().forEach((c) => discard.push())
+    board.sets.shift().forEach(c => discard.push(c))
   }
 }
 
@@ -171,12 +177,6 @@ function isSetCorrect([c1, c2, c3]) {
   return letter && count && fill && color
 }
 
-function pickCardFromBoard(i) {
-  const c = board.cards[i]
-  board.cards[i] = undefined
-  return c
-}
-
 function clearBoard() {
   board.cards.forEach((c) => {
     if (c) discard.push(c)
@@ -185,25 +185,22 @@ function clearBoard() {
   board.bounds = []
   board.selected = []
 
-  if (deck.length < 12) {
-    discard = shuffle(discard)
-    discard.forEach((c) => deck.push(c))
-    discard = []
-  }
-
   lastPick = second()
   resetTimer()
 }
 
 function resetTimer() {
-  roundTime = 60
+  roundTime = 99
 }
 
 function draw() {
-  clear()
   background(255)
 
   if (second() != lastPick) {
+    if (deck.length == 0) {
+      deck = shuffle(discard)
+      discard = []
+    }
     let firstEmptySlot = board.cards.indexOf(undefined)
     if (firstEmptySlot != -1) {
       board.cards[firstEmptySlot] = deck.shift()
