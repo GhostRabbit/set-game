@@ -34,19 +34,23 @@ function isSetCorrect(c1, c2, c3) {
 }
 
 let withSet = 0, withoutSet = 0
+const counts = []
 
 for (let s = 0; s < 10000; s++) {
     deck.sort(() => Math.random() - 0.5)
     let isSet = false
+    let count = 0
     combos.forEach(c => {
         if (isSetCorrect(deck[c[0]], deck[c[1]], deck[c[2]])) {
             isSet = true
-            return
+            count++
         }
     })
+    if (!counts[count]) counts[count] =1
+    else counts[count]++
     if (isSet) withSet++
     else withoutSet++
 }
 
 console.log(withSet, withoutSet, withSet + withoutSet, withSet / (withSet + withoutSet))
-
+console.log(counts)
