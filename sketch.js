@@ -11,6 +11,7 @@ let lastPick
 let player = {}
 let scoreArea
 let splash
+let cutScene = 0
 const dimensions = {}
 const cardBackgrounds = {}
 const animationSpeed = 25000
@@ -94,6 +95,9 @@ function mouseClicked(event) {
   const x = event.clientX
   const y = event.clientY
 
+  // In cutscene?
+  if (cutScene > 0) return
+
   // In splash mode?
   if (splash) {
     splash = undefined
@@ -152,7 +156,7 @@ function pickUpSet(set) {
 }
 
 function makeSet(set) {
-  let s = new Set(set, player.color)
+  let s = new Set(set, player.color, isCorrect(set))
   board.sets.push(s)
   return s
 }
@@ -183,34 +187,46 @@ function draw() {
   )
   cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave])
 
-  if (splash) {
-    splash.drawSplash()
-    return
-  }
-
-  if (second() != lastPick) {
-    if (deck.length == 0) {
-      deck = shuffle(discard)
-      discard = []
-    }
-    let firstEmptySlot = board.cards.indexOf(undefined)
-    if (firstEmptySlot != -1) {
-      board.cards[firstEmptySlot] = deck.shift()
-    } else if (board.cards.length < 12) {
-      board.cards.push(deck.shift())
-    }
-    lastPick = second()
-    if (roundTime-- == 0) {
+  if (cutScene > 0) {
+    cutScene -= deltaTime
+    let x = cutScene / 5000.0
+    let col = color('rgba(255,255,255,' + (1.0 - x * x) + ')')
+    drawBoard(cutSet, col)
+    if (cutScene <= 0) {
       clearBoard()
+      if (cutSet.length > 0) player.score--
     }
   }
+  else {
+    if (splash) {
+      splash.drawSplash()
+      return
+    }
 
-  drawBoard()
+    if (second() != lastPick) {
+      if (deck.length == 0) {
+        deck = shuffle(discard)
+        discard = []
+      }
+      let firstEmptySlot = board.cards.indexOf(undefined)
+      if (firstEmptySlot != -1) {
+        board.cards[firstEmptySlot] = deck.shift()
+      } else if (board.cards.length < 12) {
+        board.cards.push(deck.shift())
+      }
+      lastPick = second()
+      if (roundTime-- == 1) {
+        cutScene = 5000
+        cutSet = findCorrectSetIn(board.cards)
+      }
+    }
+    drawBoard()
+  }
   drawSets()
-  scoreArea.draw()
+  scoreArea.paint()
 }
 
-function drawBoard() {
+function drawBoard(cutSet, fadeColor) {
   let x = (dimensions.w + dimensions.ws) / 2
   let y
   const w = dimensions.w
@@ -229,6 +245,9 @@ function drawBoard() {
         stroke(color)
         rectMode(CENTER)
         rect(x, y, w, h, dimensions.corner)
+      }
+      if (cutSet && !cutSet.includes(card)) {
+        card.fade(fadeColor)
       }
     }
     y += dimensions.hs + h
@@ -249,128 +268,17 @@ function drawSets() {
   })
 }
 
-class Set {
-  constructor(cards, borderColor) {
-    this.cards = cards
-    this.borderColor = borderColor
-  }
-
-  countUniques(a, b, c) {
-    if (a == b && b == c) return 1
-    if (a != b && a != c && b != c) return 3
-    return 2
-  }
-
-  isCorrect([c1, c2, c3]) {
-    const letter = this.countUniques(c1.letter, c2.letter, c3.letter) != 2
-    const count = this.countUniques(c1.count, c2.count, c3.count) != 2
-    const fill = this.countUniques(c1.fill, c2.fill, c3.fill) != 2
-    const color = this.countUniques(c1.color, c2.color, c3.color) != 2
-    this.corrects = [letter, count, fill, color]
-    return letter && count && fill && color
-  }
-
-  score() {
-    if (this.isCorrect(this.cards)) {
-      this.correct = true
-      player.score++
-      resetTimer()
-    } else {
-      player.score--
-    }
-  }
-
-  discard() {
-    this.cards.forEach(c => discard.push(c))
-  }
-
-  draw(x, y) {
-    this.x = x
-    this.y = y
-    this.cards.forEach((card, i) => {
-      card.paint(x + (i + 0.5) * dimensions.w / 3, y + dimensions.h / 6, 1 / 3)
-    })
-    rectMode(CORNER)
-    noFill()
-    strokeWeight(dimensions.stroke / 2)
-    stroke(this.borderColor)
-    if (!this.correct) {
-      fill(color("rgba(255,0,0,0.25)"))
-    }
-    rect(x, y, dimensions.w, dimensions.h / 3, dimensions.corner / 3)
-  }
-
-  covers(x, y) {
-    return this.x < x && x < this.x + dimensions.w
-      && this.y < y && y < this.y + dimensions.h / 3
-  }
-
-  drawSplash() {
-    this.cards.forEach((card, i) => {
-      let x = (i + 0.5) * (dimensions.w + dimensions.ws)
-      let y = dimensions.h
-      card.paint(x, y)
-
-      this.isCorrect(this.cards)
-
-      y += dimensions.h
-      textAlign(CENTER, CENTER)
-      textSize(dimensions.text)
-      textStyle(BOLD)
-      noStroke()
-      fill(color("black"))
-      text(card.letter, x, y)
-      if (!this.corrects[0]) {
-        noFill()
-        stroke(color("red"))
-        strokeWeight(dimensions.stroke)
-        ellipse(x, y - dimensions.stroke, dimensions.w / 2, dimensions.h / 2)
-      }
-
-      y += dimensions.h
-      noStroke()
-      fill(color("black"))
-      text("I".repeat(card.count), x, y)
-      if (!this.corrects[1]) {
-        noFill()
-        stroke(color("red"))
-        strokeWeight(dimensions.stroke)
-        ellipse(x, y - dimensions.stroke, dimensions.w / 2, dimensions.h / 2)
-      }
-
-      y += dimensions.h
-      stroke(color("black"))
-      strokeWeight(dimensions.stroke)
-      image(cardBackgrounds[card.fill][0], x, y)
-
-      if (!this.corrects[2]) {
-        noFill()
-        stroke(color("red"))
-        strokeWeight(dimensions.stroke)
-        line(x - dimensions.w / 2, y - dimensions.h / 2, x + dimensions.w / 2, y + dimensions.h / 2)
-        line(x + dimensions.w / 2, y - dimensions.h / 2, x - dimensions.w / 2, y + dimensions.h / 2)
-      }
-
-      y += dimensions.h
-      noStroke()
-      fill(card.color)
-      rectMode(CENTER)
-      rect(x, y, dimensions.w / 2, dimensions.h / 2, dimensions.corner / 2)
-      if (!this.corrects[3]) {
-        noFill()
-        stroke(color("red"))
-        strokeWeight(dimensions.stroke)
-        line(x - dimensions.w / 4, y - dimensions.h / 4, x + dimensions.w / 4, y + dimensions.h / 4)
-        line(x + dimensions.w / 4, y - dimensions.h / 4, x - dimensions.w / 4, y + dimensions.h / 4)
-      }
-
-    })
-  }
+function isCorrect([c1, c2, c3]) {
+  const letter = countUniques(c1.letter, c2.letter, c3.letter) != 2
+  const count = countUniques(c1.count, c2.count, c3.count) != 2
+  const fill = countUniques(c1.fill, c2.fill, c3.fill) != 2
+  const color = countUniques(c1.color, c2.color, c3.color) != 2
+  return [letter, count, fill, color]
 }
 
 class ScoreArea {
 
-  draw(x, y) {
+  paint(x, y) {
     textStyle(NORMAL)
     textAlign(LEFT, BOTTOM)
     const hsize = height / 25
@@ -381,15 +289,15 @@ class ScoreArea {
       [player.score + " ", color(player.color)],
       ["p", color("white")],
     ]
-    this.drawText(
+    this.paintText(
       width - dimensions.ws / 2 - textWidth(player.score + " p"),
       height - hsize - dimensions.hs / 2,
       strings
     )
-    this.drawCountdown()
+    this.paintCountdown()
   }
 
-  drawText(x, y, text_array) {
+  paintText(x, y, text_array) {
     var pos_x = x
     for (var i = 0; i < text_array.length; ++i) {
       var part = text_array[i]
@@ -402,7 +310,7 @@ class ScoreArea {
     }
   }
 
-  drawCountdown() {
+  paintCountdown() {
     textStyle(NORMAL)
     textAlign(LEFT, BOTTOM)
     textSize(height / 25)
