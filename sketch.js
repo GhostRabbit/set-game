@@ -216,17 +216,17 @@ function drawBoard() {
   const w = dimensions.w
   const h = dimensions.h
   board.bounds = []
-  board.cards.forEach((c, i) => {
+  board.cards.forEach((card, i) => {
     if (i % 4 == 0) {
       y = dimensions.hs / 2 + h / 2
       if (i > 0) x += dimensions.w + dimensions.ws
     }
-    if (c) {
-      c.draw(x, y)
-      if (board.selected.includes(c)) {
-        const c = player.colorAlfa
-        fill(c)
-        stroke(c)
+    if (card) {
+      card.paint(x, y)
+      if (board.selected.includes(card)) {
+        const color = player.colorAlfa
+        fill(color)
+        stroke(color)
         rectMode(CENTER)
         rect(x, y, w, h, dimensions.corner)
       }
@@ -247,43 +247,6 @@ function drawSets() {
     set.draw(x, y)
     y += (dimensions.hs + dimensions.h) / 3
   })
-}
-
-class Card {
-  constructor(letter, count, fill, color) {
-    this.letter = letter
-    this.count = count
-    this.fill = fill
-    this.color = color
-  }
-
-  draw(x, y, scaleFactor) {
-    this.x = x
-    this.y = y
-    push()
-    translate(x, y)
-    if (scaleFactor > 0) scale(scaleFactor)
-    rectMode(CENTER)
-    image(cardBackgrounds[this.fill][0], 0, 0)
-    stroke(this.color)
-    strokeWeight(dimensions.stroke)
-    noFill()
-    rect(0, 0, dimensions.w, dimensions.h, dimensions.corner)
-
-    textAlign(CENTER, CENTER)
-    textSize(dimensions.text)
-    textStyle(BOLD)
-    stroke(color("black"))
-    fill(this.color)
-    strokeWeight(dimensions.stroke)
-    text(this.letter.repeat(this.count), 0, 5)
-    pop()
-  }
-
-  covers(x, y) {
-    return this.x - dimensions.w / 2 < x && x < this.x + dimensions.w / 2
-      && this.y - dimensions.h / 2 < y && y < this.y + dimensions.h / 2
-  }
 }
 
 class Set {
@@ -325,7 +288,7 @@ class Set {
     this.x = x
     this.y = y
     this.cards.forEach((card, i) => {
-      card.draw(x + (i + 0.5) * dimensions.w / 3, y + dimensions.h / 6, 1 / 3)
+      card.paint(x + (i + 0.5) * dimensions.w / 3, y + dimensions.h / 6, 1 / 3)
     })
     rectMode(CORNER)
     noFill()
@@ -346,7 +309,7 @@ class Set {
     this.cards.forEach((card, i) => {
       let x = (i + 0.5) * (dimensions.w + dimensions.ws)
       let y = dimensions.h
-      card.draw(x, y)
+      card.paint(x, y)
 
       this.isCorrect(this.cards)
 
