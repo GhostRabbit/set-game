@@ -174,7 +174,7 @@ function clearBoard() {
 }
 
 function resetTimer() {
-  roundTime = 99
+  roundTime = 75
 }
 
 function draw() {
@@ -214,8 +214,9 @@ function draw() {
       } else if (board.cards.length < 12) {
         board.cards.push(deck.shift())
       }
+      if (board.cards.length == 12 && board.cards.indexOf(undefined) == -1) roundTime--
       lastPick = second()
-      if (roundTime-- == 1) {
+      if (roundTime == 0) {
         cutScene = 5000
         cutSet = findCorrectSetIn(board.cards)
       }
@@ -238,17 +239,12 @@ function drawBoard(cutSet, fadeColor) {
       if (i > 0) x += dimensions.w + dimensions.ws
     }
     if (card) {
-      card.paint(x, y)
-      if (board.selected.includes(card)) {
-        const color = player.colorAlfa
-        fill(color)
-        stroke(color)
-        rectMode(CENTER)
-        rect(x, y, w, h, dimensions.corner)
-      }
-      if (cutSet && !cutSet.includes(card)) {
+      if (board.selected.includes(card))
+        card.paint(x, y, 1.0, player.colorAlfa)
+      else
+        card.paint(x, y, 1.0)
+      if (cutSet && !cutSet.includes(card))
         card.fade(fadeColor)
-      }
     }
     y += dimensions.hs + h
   })
