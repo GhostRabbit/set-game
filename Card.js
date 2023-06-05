@@ -15,9 +15,9 @@ class Card {
         this.y = y
         push()
         translate(x, y)
-        rotate(this.a)
+        // rotate(this.a)
         scale(scaleFactor)
-        translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        // translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
         rectMode(CENTER)
         image(cardBackgrounds[this.fill][0], 0, 0)
         stroke(this.color)
@@ -34,8 +34,8 @@ class Card {
         text(this.letter.repeat(this.count), 0, 5)
         if (highlightColor) {
             fill(highlightColor)
-            stroke(highlightColor)
-            rect(0, 0, dimensions.w, dimensions.h, dimensions.corner)
+            noStroke()
+            rect(0, 0, dimensions.w + dimensions.stroke, dimensions.h + dimensions.stroke, dimensions.corner)
         }
         pop()
     }
@@ -48,8 +48,8 @@ class Card {
     fade(fadeColor) {
         push()
         translate(this.x, this.y)
-        rotate(this.a)
-        translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        // rotate(this.a)
+        // translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
         rectMode(CENTER)
         strokeWeight(1.5 * dimensions.stroke)
         stroke(fadeColor)

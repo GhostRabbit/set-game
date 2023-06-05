@@ -7,7 +7,8 @@ let board = {
 }
 let discard = []
 let roundTime
-let lastPick
+let lastPickTime
+let totalPlayTime = 0
 let player = {}
 let scoreArea
 let splash
@@ -169,7 +170,7 @@ function clearBoard() {
   board.bounds = []
   board.selected = []
 
-  lastPick = second()
+  lastPickTime = second()
   resetTimer()
 }
 
@@ -203,7 +204,7 @@ function draw() {
       return
     }
 
-    if (second() != lastPick) {
+    if (second() != lastPickTime) {
       if (deck.length == 0) {
         deck = shuffle(discard)
         discard = []
@@ -214,8 +215,11 @@ function draw() {
       } else if (board.cards.length < 12) {
         board.cards.push(deck.shift())
       }
-      if (board.cards.length == 12 && board.cards.indexOf(undefined) == -1) roundTime--
-      lastPick = second()
+      if (board.cards.length == 12 && board.cards.indexOf(undefined) == -1) {
+        roundTime--
+        totalPlayTime++
+      }
+      lastPickTime = second()
       if (roundTime == 0) {
         cutScene = 5000
         cutSet = findCorrectSetIn(board.cards)
@@ -291,6 +295,7 @@ class ScoreArea {
       strings
     )
     this.paintCountdown()
+    this.paintScoreRate()
   }
 
   paintText(x, y, text_array) {
@@ -318,6 +323,23 @@ class ScoreArea {
       string,
       width - dimensions.ws / 2 - textWidth(string),
       height - dimensions.hs / 2
+    )
+  }
+
+  paintScoreRate() {
+    if (totalPlayTime < 60) return;
+
+    textStyle(NORMAL)
+    textAlign(LEFT, BOTTOM)
+    textSize(height / 25)
+    stroke(color("black"))
+    fill(color(player.color))
+    strokeWeight(dimensions.stroke / 2)
+    const string = (player.score / (totalPlayTime / 60.0)).toFixed(2)
+    text(
+      string,
+      width - dimensions.ws / 2 - textWidth(string),
+      height - dimensions.hs * 3
     )
   }
 
