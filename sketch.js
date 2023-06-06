@@ -1,3 +1,7 @@
+const features = {
+  wonkyness: false
+}
+
 let deck = []
 let board = {
   cards: [],
@@ -9,7 +13,9 @@ let discard = []
 let roundTime
 let lastPickTime
 let totalPlayTime = 0
-let player = {}
+let player = {
+  declaredNoSet: false
+}
 let scoreArea
 let splash
 let cutScene = 0
@@ -61,7 +67,11 @@ function init() {
 function calculatePlayerColor() {
   const c = color(playerColors[0])
   player.color = c
-  player.colorAlfa = color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')')
+  player.colorAlfa = createColorWithAlpha(c)
+}
+
+function createColorWithAlpha(c) {
+  return color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')')
 }
 
 function windowResized() {
@@ -122,6 +132,16 @@ function mouseClicked(event) {
     }
   }
 
+  // In NoSetBUtton?
+  if (scoreArea.noSetButton.covers(x, y)) {
+    if (boardIsFull()) {
+      player.declaredNoSet = true
+      triggerCutScene()
+    }
+    return
+  }
+
+
   // In score?
   if (scoreArea.covers(x, y)) {
     // Swap player color
@@ -162,6 +182,10 @@ function makeSet(set) {
   return s
 }
 
+function boardIsFull() {
+  return board.cards.length == 12 && board.cards.indexOf(undefined) == -1
+}
+
 function clearBoard() {
   board.cards.forEach((c) => {
     if (c) discard.push(c)
@@ -176,6 +200,11 @@ function clearBoard() {
 
 function resetTimer() {
   roundTime = 75
+}
+
+function triggerCutScene() {
+  cutScene = 5000
+  cutSet = findCorrectSetIn(board.cards)
 }
 
 function draw() {
@@ -196,6 +225,8 @@ function draw() {
     if (cutScene <= 0) {
       clearBoard()
       if (cutSet.length > 0) player.score--
+      else if (player.declaredNoSet) player.score++
+      player.declaredNoSet = false
     }
   }
   else {
@@ -215,15 +246,12 @@ function draw() {
       } else if (board.cards.length < 12) {
         board.cards.push(deck.shift())
       }
-      if (board.cards.length == 12 && board.cards.indexOf(undefined) == -1) {
+      if (boardIsFull()) {
         roundTime--
         totalPlayTime++
       }
       lastPickTime = second()
-      if (roundTime == 0) {
-        cutScene = 5000
-        cutSet = findCorrectSetIn(board.cards)
-      }
+      if (roundTime == 0) triggerCutScene()
     }
     drawBoard()
   }
@@ -274,79 +302,6 @@ function isCorrect([c1, c2, c3]) {
   const fill = countUniques(c1.fill, c2.fill, c3.fill) != 2
   const color = countUniques(c1.color, c2.color, c3.color) != 2
   return [letter, count, fill, color]
-}
-
-class ScoreArea {
-
-  paint(x, y) {
-    textStyle(NORMAL)
-    textAlign(LEFT, BOTTOM)
-    const hsize = height / 25
-    textSize(hsize)
-    stroke(color('black'))
-    strokeWeight(dimensions.stroke / 2)
-    let strings = [
-      [player.score + " ", color(player.color)],
-      ["p", color("white")],
-    ]
-    this.paintText(
-      width - dimensions.ws / 2 - textWidth(player.score + " p"),
-      height - hsize - dimensions.hs / 2,
-      strings
-    )
-    this.paintCountdown()
-    this.paintScoreRate()
-  }
-
-  paintText(x, y, text_array) {
-    var pos_x = x
-    for (var i = 0; i < text_array.length; ++i) {
-      var part = text_array[i]
-      var t = part[0]
-      var c = part[1]
-      var w = textWidth(t)
-      fill(c)
-      text(t, pos_x, y)
-      pos_x += w
-    }
-  }
-
-  paintCountdown() {
-    textStyle(NORMAL)
-    textAlign(LEFT, BOTTOM)
-    textSize(height / 25)
-    stroke(color("black"))
-    fill(color("white"))
-    strokeWeight(dimensions.stroke / 2)
-    const string = roundTime + " s"
-    text(
-      string,
-      width - dimensions.ws / 2 - textWidth(string),
-      height - dimensions.hs / 2
-    )
-  }
-
-  paintScoreRate() {
-    if (totalPlayTime < 60) return;
-
-    textStyle(NORMAL)
-    textAlign(LEFT, BOTTOM)
-    textSize(height / 25)
-    stroke(color("black"))
-    fill(color(player.color))
-    strokeWeight(dimensions.stroke / 2)
-    const string = (player.score / (totalPlayTime / 60.0)).toFixed(2)
-    text(
-      string,
-      width - dimensions.ws / 2 - textWidth(string),
-      height - dimensions.hs * 3
-    )
-  }
-
-  covers(x, y) {
-    return width - dimensions.w < x && x < width
-      && height - dimensions.h < y && y < height
-  }
 }
 
 const Fill = {

@@ -10,14 +10,22 @@ class Card {
         this.dy = random(-0.5, 0.5) * 0.4
     }
 
+    clone() {
+        return new Card(this.letter, this.count, this.fill, this.color)
+    }
+
     paint(x, y, scaleFactor, highlightColor) {
         this.x = x
         this.y = y
         push()
         translate(x, y)
-        // rotate(this.a)
-        scale(scaleFactor)
-        // translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        if (features.wonkyness) {
+            rotate(this.a)
+            scale(scaleFactor)
+            translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        } else {
+            scale(scaleFactor)
+        }
         rectMode(CENTER)
         image(cardBackgrounds[this.fill][0], 0, 0)
         stroke(this.color)
@@ -48,8 +56,10 @@ class Card {
     fade(fadeColor) {
         push()
         translate(this.x, this.y)
-        // rotate(this.a)
-        // translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        if (features.wonkyness) {
+            rotate(this.a)
+            translate(dimensions.ws * this.dx, dimensions.hs * this.dy)
+        }
         rectMode(CENTER)
         strokeWeight(1.5 * dimensions.stroke)
         stroke(fadeColor)

@@ -28,7 +28,7 @@ class Set {
     rectMode(CORNER);
     noFill();
     strokeWeight(dimensions.stroke / 2);
-    stroke(this.borderColor);
+    if (this.borderColor) stroke(this.borderColor);
     if (!this.correct) {
       fill(color("rgba(255,0,0,0.25)"));
     }
