@@ -224,7 +224,13 @@ function draw() {
     drawBoard(cutSet, col)
     if (cutScene <= 0) {
       clearBoard()
-      if (cutSet.length > 0) player.score--
+      if (cutSet.length > 0) {
+        // minus for missed set
+        player.score--
+        // minus for wrongly declaration
+        if (player.declaredNoSet) player.score--
+      } 
+      // Bonus for declararation when no set exist
       else if (player.declaredNoSet) player.score++
       player.declaredNoSet = false
     }
