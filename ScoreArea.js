@@ -11,11 +11,11 @@ class ScoreArea {
         stroke(color('black'))
         strokeWeight(dimensions.stroke / 2)
         let strings = [
-            [player.score + " ", color(player.color)],
+            [player.points + " ", color(player.color)],
             ["p", color("white")],
         ]
         this.paintText(
-            width - dimensions.ws / 2 - textWidth(player.score + " p"),
+            width - dimensions.ws / 2 - textWidth(player.points + " p"),
             height - hsize - dimensions.hs / 2,
             strings
         )
@@ -54,7 +54,7 @@ class ScoreArea {
     }
 
     paintScoreRate() {
-        if (totalPlayTime < 60) return;
+        if (player.totalPlayTime < 60) return;
 
         textStyle(NORMAL)
         textAlign(LEFT, BOTTOM)
@@ -62,7 +62,7 @@ class ScoreArea {
         stroke(color("black"))
         fill(color(player.color))
         strokeWeight(dimensions.stroke / 2)
-        const string = (player.score / (totalPlayTime / 60.0)).toFixed(2)
+        const string = player.mean()
         text(
             string,
             width - dimensions.ws / 2 - textWidth(string),

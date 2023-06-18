@@ -6,12 +6,12 @@ class Set {
     this.correct = corrects.reduce((acc, next) => acc && next, true);
   }
 
-  score() {
+  rateForScore() {
     if (this.correct) {
-      player.score++;
+      player.score(1);
       resetTimer();
     } else {
-      player.score--;
+      player.score(-1);
     }
   }
 

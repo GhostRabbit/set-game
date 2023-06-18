@@ -1,42 +1,39 @@
 const features = {
   wonkyness: false
-}
+};
 
-let deck = []
+let deck = [];
 let board = {
   cards: [],
   bounds: [],
   selected: [],
   sets: [],
-}
-let discard = []
-let roundTime
-let lastPickTime
-let totalPlayTime = 0
-let player = {
-  declaredNoSet: false
-}
-let scoreArea
-let splash
-let cutScene = 0
-const dimensions = {}
-const cardBackgrounds = {}
-const animationSpeed = 25000
-const playerColors = ["yellow", "blue", "green", "red"]
+};
+let discard = [];
+let roundTime;
+let lastPickTime;
+const player = new Player();
+let scoreArea;
+let splash;
+let cutScene = 0;
+const dimensions = {};
+const cardBackgrounds = {};
+const animationSpeed = 25000;
+const playerColors = ["yellow", "blue", "green", "red"];
 
 function setup() {
-  const cnv = createCanvas(windowWidth, windowHeight)
-  cnv.style("display", "block") // Hack to hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
-  frameRate(15)
-  rectMode(CENTER)
-  imageMode(CENTER)
-  init()
-  clearBoard()
+  const cnv = createCanvas(windowWidth, windowHeight);
+  cnv.style("display", "block"); // Hack to hide scrollbars https://github.com/processing/p5.js/wiki/Positioning-your-canvas#making-the-canvas-fill-the-window
+  frameRate(15);
+  rectMode(CENTER);
+  imageMode(CENTER);
+  init();
+  clearBoard();
 }
 
 function init() {
-  console.log("init")
-  deck = []
+  console.log("init");
+  deck = [];
 
   // Create cards
   const x = [
@@ -47,379 +44,376 @@ function init() {
     Object.keys(Fill).forEach((f) => {
       const y = ["X", "Y", "Z"].forEach((l) => {
         for (let n = 1; n <= 3; n++) {
-          deck.push(new Card(l, n, f, c))
+          deck.push(new Card(l, n, f, c));
         }
-      })
-    })
-  })
+      });
+    });
+  });
 
-  deck = shuffle(deck)
-  player.score = 0
-  scoreArea = new ScoreArea()
-  calculatePlayerColor()
-  updateDimensions()
-  initGraphics()
-  // for (let i = 0; i < 6; i++)
-  //   makeSet([deck.pop(), deck.pop(), deck.pop()])
-  // splash = board.sets[0]
+  deck = shuffle(deck);
+  scoreArea = new ScoreArea();
+  calculatePlayerColor();
+  updateDimensions();
+  initGraphics();
 }
 
 function calculatePlayerColor() {
-  const c = color(playerColors[0])
-  player.color = c
-  player.colorAlfa = createColorWithAlpha(c)
+  const c = color(playerColors[0]);
+  player.color = c;
+  player.colorAlfa = createColorWithAlpha(c);
 }
 
 function createColorWithAlpha(c) {
-  return color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')')
+  return color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')');
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight)
-  updateDimensions()
-  initGraphics()
+  resizeCanvas(windowWidth, windowHeight);
+  updateDimensions();
+  initGraphics();
 }
 
 function initGraphics() {
+  // Can prolly be precalculated
   cardBackgrounds[Fill.Striped] = createCardGraphics(
     cardBackgrounds[Fill.Striped]
-  ) // Can prolly be precalculated
+  );
   cardBackgrounds[Fill.Checker] = createCardGraphics(
     cardBackgrounds[Fill.Checker]
-  )
-  cardBackgrounds[Fill.Wave] = createCardGraphics(cardBackgrounds[Fill.Wave]) // Can prolly be precalculated
+  );
+  cardBackgrounds[Fill.Wave] = createCardGraphics(cardBackgrounds[Fill.Wave]);
 }
 
 function updateDimensions() {
-  dimensions.w = (width * 2) / 7
-  dimensions.ws = (width - 3 * dimensions.w) / 3
-  dimensions.h = height / 6
+  dimensions.w = 2 * width / 7;
+  dimensions.ws = (width - 3 * dimensions.w) / 3;
+  dimensions.h = height / 6;
   dimensions.hs =
-    (height / 10 + (3 * height) / 5 + height / 10) / 4 - height / 6
-  dimensions.lineWidth = (height + width) / 100
-  dimensions.corner = (dimensions.h + dimensions.w) / 20
-  dimensions.text = min(dimensions.h / 2, dimensions.w / 3)
-  dimensions.stroke = dimensions.text / 8
+    (height / 10 + (3 * height) / 5 + height / 10) / 4 - height / 6;
+  dimensions.lineWidth = (height + width) / 100;
+  dimensions.corner = (dimensions.h + dimensions.w) / 20;
+  dimensions.text = min(dimensions.h / 2, dimensions.w / 3);
+  dimensions.stroke = dimensions.text / 8;
 }
 
 function mouseClicked(event) {
-  const x = event.clientX
-  const y = event.clientY
+  const x = event.clientX;
+  const y = event.clientY;
 
   // In cutscene?
-  if (cutScene > 0) return
+  if (cutScene > 0) return;
 
   // In splash mode?
   if (splash) {
-    splash = undefined
-    return
+    splash = undefined;
+    return;
   }
 
   // In card?
   for (let card of board.cards) {
-    if (!card) continue
+    if (!card) continue;
     if (card.covers(x, y)) {
-      selectCard(card)
-      return
+      selectCard(card);
+      return;
     }
   }
 
   // In set?
   for (let set of board.sets) {
     if (set.covers(x, y)) {
-      splash = set
-      return
+      splash = set;
+      return;
     }
   }
 
   // In NoSetBUtton?
   if (scoreArea.noSetButton.covers(x, y)) {
     if (boardIsFull()) {
-      player.declaredNoSet = true
-      triggerCutScene()
+      player.declaredNoSet = true;
+      triggerCutScene();
     }
-    return
+    return;
   }
 
 
   // In score?
   if (scoreArea.covers(x, y)) {
     // Swap player color
-    playerColors.push(playerColors.shift())
-    calculatePlayerColor()
-    return
+    playerColors.push(playerColors.shift());
+    calculatePlayerColor();
+    return;
   }
 }
 
 function selectCard(c) {
   // Deselect
   if (board.selected.includes(c)) {
-    board.selected.splice(board.selected.indexOf(c), 1)
-    return
+    board.selected.splice(board.selected.indexOf(c), 1);
+    return;
   }
 
   // Select
-  board.selected.push(c)
+  board.selected.push(c);
   if (board.selected.length == 3) {
-    pickUpSet(board.selected)
-    board.selected = []
+    pickUpSet(board.selected);
+    board.selected = [];
   }
 }
 
 function pickUpSet(set) {
   for (let card of set) {
-    board.cards[board.cards.indexOf(card)] = undefined
+    board.cards[board.cards.indexOf(card)] = undefined;
   }
-  makeSet(set).score()
+  makeSet(set).rateForScore();
   if (board.sets.length > 6) {
-    board.sets.shift().discard()
+    board.sets.shift().discard();
   }
 }
 
 function makeSet(set) {
-  let s = new Set(set, player.color, isCorrect(set))
-  board.sets.push(s)
-  return s
+  let s = new Set(set, player.color, isCorrect(set));
+  board.sets.push(s);
+  return s;
 }
 
 function boardIsFull() {
-  return board.cards.length == 12 && board.cards.indexOf(undefined) == -1
+  return board.cards.length == 12 && board.cards.indexOf(undefined) == -1;
 }
 
 function clearBoard() {
   board.cards.forEach((c) => {
-    if (c) discard.push(c)
-  })
-  board.cards = []
-  board.bounds = []
-  board.selected = []
+    if (c) discard.push(c);
+  });
+  board.cards = [];
+  board.bounds = [];
+  board.selected = [];
 
-  lastPickTime = second()
-  resetTimer()
+  lastPickTime = second();
+  resetTimer();
 }
 
 function resetTimer() {
-  roundTime = 75
+  roundTime = 75;
 }
 
 function triggerCutScene() {
-  cutScene = 5000
-  cutSet = findCorrectSetIn(board.cards)
+  cutScene = 5000;
+  cutSet = findCorrectSetIn(board.cards);
 }
 
 function draw() {
-  background(255)
+  background(255);
   cardBackgrounds[Fill.Striped] = updateStripedBackground(
     cardBackgrounds[Fill.Striped]
-  )
+  );
   cardBackgrounds[Fill.Checker] = updateCheckerBackground(
     cardBackgrounds[Fill.Checker]
-  )
-  cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave])
+  );
+  cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave]);
 
   if (cutScene > 0) {
-    cutScene -= deltaTime
-    let x = cutScene / 5000.0
-    let col = color('rgba(255,255,255,' + (1.0 - x * x) + ')')
-    drawBoard(cutSet, col)
+    cutScene -= deltaTime;
+    let x = cutScene / 5000.0;
+    let col = color('rgba(255,255,255,' + (1.0 - x * x) + ')');
+    drawBoard(cutSet, col);
     if (cutScene <= 0) {
-      clearBoard()
+      clearBoard();
       if (cutSet.length > 0) {
         // minus for missed set
-        player.score--
+        player.score(-1);
         // minus for wrongly declaration
-        if (player.declaredNoSet) player.score--
-      } 
+        if (player.declaredNoSet) player.score(-1);
+      }
       // Bonus for declararation when no set exist
-      else if (player.declaredNoSet) player.score++
-      player.declaredNoSet = false
+      else if (player.declaredNoSet) player.score(1);
+      player.declaredNoSet = false;
     }
   }
   else {
     if (splash) {
-      splash.drawSplash()
-      return
+      splash.drawSplash();
+      return;
     }
 
     if (second() != lastPickTime) {
       if (deck.length == 0) {
-        deck = shuffle(discard)
-        discard = []
+        deck = shuffle(discard);
+        discard = [];
       }
-      let firstEmptySlot = board.cards.indexOf(undefined)
+      let firstEmptySlot = board.cards.indexOf(undefined);
       if (firstEmptySlot != -1) {
-        board.cards[firstEmptySlot] = deck.shift()
+        board.cards[firstEmptySlot] = deck.shift();
       } else if (board.cards.length < 12) {
-        board.cards.push(deck.shift())
+        board.cards.push(deck.shift());
       }
       if (boardIsFull()) {
-        roundTime--
-        totalPlayTime++
+        roundTime--;
+        player.totalPlayTime++;
       }
-      lastPickTime = second()
-      if (roundTime == 0) triggerCutScene()
+      lastPickTime = second();
+      if (roundTime == 0) triggerCutScene();
     }
-    drawBoard()
+    drawBoard();
   }
-  drawSets()
-  scoreArea.paint()
+  drawSets();
+  scoreArea.paint();
 }
 
 function drawBoard(cutSet, fadeColor) {
-  let x = (dimensions.w + dimensions.ws) / 2
-  let y
-  const w = dimensions.w
-  const h = dimensions.h
-  board.bounds = []
+  let x = (dimensions.w + dimensions.ws) / 2;
+  let y;
+  const w = dimensions.w;
+  const h = dimensions.h;
+  board.bounds = [];
   board.cards.forEach((card, i) => {
     if (i % 4 == 0) {
-      y = dimensions.hs / 2 + h / 2
-      if (i > 0) x += dimensions.w + dimensions.ws
+      y = dimensions.hs / 2 + h / 2;
+      if (i > 0) x += dimensions.w + dimensions.ws;
     }
     if (card) {
       if (board.selected.includes(card))
-        card.paint(x, y, 1.0, player.colorAlfa)
+        card.paint(x, y, 1.0, player.colorAlfa);
       else
-        card.paint(x, y, 1.0)
+        card.paint(x, y, 1.0);
       if (cutSet && !cutSet.includes(card))
-        card.fade(fadeColor)
+        card.fade(fadeColor);
     }
-    y += dimensions.hs + h
-  })
+    y += dimensions.hs + h;
+  });
 }
 
 function drawSets() {
-  let x = dimensions.ws / 2
-  let y
+  let x = dimensions.ws / 2;
+  let y;
 
   board.sets.forEach((set, i) => {
     if (i % 3 == 0) {
-      y = 4 * (dimensions.h + dimensions.hs)
-      if (i > 0) x += dimensions.ws + dimensions.w
+      y = 4 * (dimensions.h + dimensions.hs);
+      if (i > 0) x += dimensions.ws + dimensions.w;
     }
-    set.draw(x, y)
-    y += (dimensions.hs + dimensions.h) / 3
-  })
+    set.draw(x, y);
+    y += (dimensions.hs + dimensions.h) / 3;
+  });
 }
 
 function isCorrect([c1, c2, c3]) {
-  const letter = countUniques(c1.letter, c2.letter, c3.letter) != 2
-  const count = countUniques(c1.count, c2.count, c3.count) != 2
-  const fill = countUniques(c1.fill, c2.fill, c3.fill) != 2
-  const color = countUniques(c1.color, c2.color, c3.color) != 2
-  return [letter, count, fill, color]
+  const letter = countUniques(c1.letter, c2.letter, c3.letter) != 2;
+  const count = countUniques(c1.count, c2.count, c3.count) != 2;
+  const fill = countUniques(c1.fill, c2.fill, c3.fill) != 2;
+  const color = countUniques(c1.color, c2.color, c3.color) != 2;
+  return [letter, count, fill, color];
 }
 
 const Fill = {
   Wave: "Wave",
   Striped: "Striped",
   Checker: "Checker",
-}
+};
 
 function createCardGraphics(old) {
-  if (old) old[0].remove()
+  if (old) old[0].remove();
 
-  const w = dimensions.w
-  const h = dimensions.h
+  const w = dimensions.w;
+  const h = dimensions.h;
 
-  const cnv = createGraphics(w, h)
-  const ctx = cnv.canvas.getContext("2d")
+  const cnv = createGraphics(w, h);
+  const ctx = cnv.canvas.getContext("2d");
 
-  cnv.rect(0, 0, w, h, dimensions.corner)
-  ctx.clip()
+  cnv.rect(0, 0, w, h, dimensions.corner);
+  ctx.clip();
 
-  return [cnv, ctx]
+  return [cnv, ctx];
 }
 
 function updateStripedBackground([cnv, ctx]) {
-  const w = dimensions.w
-  const h = dimensions.h
-  const lw = dimensions.lineWidth
-  const diag = sqrt(w * w + h * h)
+  const w = dimensions.w;
+  const h = dimensions.h;
+  const lw = dimensions.lineWidth;
+  const diag = sqrt(w * w + h * h);
 
-  cnv.reset()
-  cnv.background(255)
+  cnv.reset();
+  cnv.background(255);
 
-  const cols = w / (4 * lw) + 1
-  const rows = h / lw + 1
+  const cols = w / (4 * lw) + 1;
+  const rows = h / lw + 1;
   let dy = lerp(
     0,
     2 * lw,
     (millis() % animationSpeed) / animationSpeed
-  )
-  ctx.setLineDash([2 * lw, 2 * lw])
-  cnv.noStroke()
-  cnv.fill(color("#AAA"))
+  );
+  ctx.setLineDash([2 * lw, 2 * lw]);
+  cnv.noStroke();
+  cnv.fill(color("#AAA"));
   for (let j = -1; j <= rows; j++) {
-    const y = 2 * j * lw
+    const y = 2 * j * lw;
     for (let i = 0; i <= cols; i++) {
-      const x1 = w / 2 + i * 2 * lw
-      const x2 = w / 2 - i * 2 * lw
+      const x1 = w / 2 + i * 2 * lw;
+      const x2 = w / 2 - i * 2 * lw;
       if (i == 0) {
-        cnv.triangle(w / 2, y - dy, w / 2 - lw, y + 2 * lw - dy, w / 2 + lw, y + 2 * lw - dy)
+        cnv.triangle(w / 2, y - dy, w / 2 - lw, y + 2 * lw - dy, w / 2 + lw, y + 2 * lw - dy);
       } else if (i % 2 == 0) {
-        cnv.triangle(x1, y - dy, x1 - lw, y + 2 * lw - dy, x1 + lw, y + 2 * lw - dy)
-        cnv.triangle(x2, y - dy, x2 - lw, y + 2 * lw - dy, x2 + lw, y + 2 * lw - dy)
+        cnv.triangle(x1, y - dy, x1 - lw, y + 2 * lw - dy, x1 + lw, y + 2 * lw - dy);
+        cnv.triangle(x2, y - dy, x2 - lw, y + 2 * lw - dy, x2 + lw, y + 2 * lw - dy);
       } else {
-        cnv.triangle(x1, y + 2 * lw + dy, x1 - lw, y + dy, x1 + lw, y + dy)
-        cnv.triangle(x2, y + 2 * lw + dy, x2 - lw, y + dy, x2 + lw, y + dy)
+        cnv.triangle(x1, y + 2 * lw + dy, x1 - lw, y + dy, x1 + lw, y + dy);
+        cnv.triangle(x2, y + 2 * lw + dy, x2 - lw, y + dy, x2 + lw, y + dy);
       }
     }
   }
-  return [cnv, ctx]
+  return [cnv, ctx];
 }
 
 function updateWaveBackground([cnv, ctx]) {
-  const w = dimensions.w
-  const h = dimensions.h
-  const lw = dimensions.lineWidth
+  const w = dimensions.w;
+  const h = dimensions.h;
+  const lw = dimensions.lineWidth;
 
-  cnv.reset()
-  cnv.background(255)
+  cnv.reset();
+  cnv.background(255);
 
   let da = lerp(
     0,
     2 * PI,
     (millis() % (2 * animationSpeed)) / (2 * animationSpeed)
-  )
-  cnv.strokeWeight(lw)
-  cnv.stroke(color("#AAA"))
-  cnv.noFill()
-  const lines = 2 + h / lw
-  let y = -lw
+  );
+  cnv.strokeWeight(lw);
+  cnv.stroke(color("#AAA"));
+  cnv.noFill();
+  const lines = 2 + h / lw;
+  let y = -lw;
   for (let i = 0; i < lines; i++) {
-    cnv.beginShape()
+    cnv.beginShape();
     for (let x = 0; x < w; x += 5) {
-      let a = lerp(0, 2 * PI, x + w) / (3 * w) - da
-      cnv.vertex(x, y + lw * sin(a))
+      let a = lerp(0, 2 * PI, x + w) / (3 * w) - da;
+      cnv.vertex(x, y + lw * sin(a));
     }
-    cnv.endShape()
-    y += 2 * lw
+    cnv.endShape();
+    y += 2 * lw;
   }
-  return [cnv, ctx]
+  return [cnv, ctx];
 }
 
 function updateCheckerBackground([cnv, ctx]) {
-  const w = dimensions.w
-  const h = dimensions.h
-  const lw = dimensions.lineWidth
+  const w = dimensions.w;
+  const h = dimensions.h;
+  const lw = dimensions.lineWidth;
 
-  cnv.reset()
-  cnv.background(255)
+  cnv.reset();
+  cnv.background(255);
 
-  cnv.noStroke()
-  cnv.fill(color("#AAA"))
+  cnv.noStroke();
+  cnv.fill(color("#AAA"));
   let dr =
-    lw * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed))
-  const rows = h / (2 * lw) + 1
-  const cols = w / (2 * lw) + 1
+    lw * sin(lerp(0, 2 * PI, (millis() % animationSpeed) / animationSpeed));
+  const rows = h / (2 * lw) + 1;
+  const cols = w / (2 * lw) + 1;
   for (let row = 0; row < rows; row++) {
-    dr = -dr
-    let dr2 = dr
+    dr = -dr;
+    let dr2 = dr;
     for (let col = 0; col < cols; col++) {
-      cnv.circle(2 * lw * col, 2 * lw * row, 1.5 * lw + dr2)
-      dr2 = -dr2
+      cnv.circle(2 * lw * col, 2 * lw * row, 1.5 * lw + dr2);
+      dr2 = -dr2;
     }
   }
-  return [cnv, ctx]
+  return [cnv, ctx];
 }
