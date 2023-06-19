@@ -19,7 +19,6 @@ let cutScene = 0;
 const dimensions = {};
 const cardBackgrounds = {};
 const animationSpeed = 25000;
-const playerColors = ["yellow", "blue", "green", "red"];
 
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight);
@@ -52,20 +51,10 @@ function init() {
 
   deck = shuffle(deck);
   scoreArea = new ScoreArea();
-  calculatePlayerColor();
   updateDimensions();
   initGraphics();
 }
 
-function calculatePlayerColor() {
-  const c = color(playerColors[0]);
-  player.color = c;
-  player.colorAlfa = createColorWithAlpha(c);
-}
-
-function createColorWithAlpha(c) {
-  return color('rgba(' + red(c) + ',' + green(c) + ',' + blue(c) + ',' + 0.3 + ')');
-}
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
@@ -135,12 +124,10 @@ function mouseClicked(event) {
     return;
   }
 
-
   // In score?
   if (scoreArea.covers(x, y)) {
     // Swap player color
-    playerColors.push(playerColors.shift());
-    calculatePlayerColor();
+    player.nextColor()
     return;
   }
 }
@@ -171,7 +158,7 @@ function pickUpSet(set) {
 }
 
 function makeSet(set) {
-  let s = new Set(set, player.color, isCorrect(set));
+  let s = new Set(set, player.getColor(), isCorrect(set));
   board.sets.push(s);
   return s;
 }
