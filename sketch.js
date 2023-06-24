@@ -54,7 +54,7 @@ function init() {
   scoreArea = new ScoreArea();
   updateDimensions();
   initGraphics();
-  player = new Player()
+  player = new Player();
 }
 
 
@@ -129,7 +129,7 @@ function mouseClicked(event) {
   // In score?
   if (scoreArea.covers(x, y)) {
     // Swap player color
-    player.nextColor()
+    player.nextColor();
     return;
   }
 }
@@ -191,22 +191,16 @@ function triggerCutScene() {
 }
 
 function colorBounce() {
-    const eventTime = millis()
-    return (now) => {
-      const elapsedTime = now - eventTime
-      return constrain(100-elapsedTime/5, 50, 75) + constrain((elapsedTime-250)/5, 0, 255)
-    }
+  const eventTime = millis();
+  return (now) => {
+    const elapsedTime = now - eventTime;
+    return constrain(100 - elapsedTime / 5, 50, 75) + constrain((elapsedTime - 250) / 5, 0, 255);
+  };
 }
 
 function draw() {
   background(color(bgColor[0](millis()), bgColor[1](millis()), bgColor[2](millis())));
-  cardBackgrounds[Fill.Striped] = updateStripedBackground(
-    cardBackgrounds[Fill.Striped]
-  );
-  cardBackgrounds[Fill.Checker] = updateCheckerBackground(
-    cardBackgrounds[Fill.Checker]
-  );
-  cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave]);
+  updateBackgrounds();
 
   if (cutScene > 0) {
     cutScene -= deltaTime;
@@ -237,9 +231,9 @@ function draw() {
         deck = shuffle(discard);
         discard = [];
       }
-      let firstEmptySlot = board.cards.indexOf(undefined);
-      if (firstEmptySlot != -1) {
-        board.cards[firstEmptySlot] = deck.shift();
+      let emptySlot = findEmptySlot();
+      if (emptySlot != -1) {
+        board.cards[emptySlot] = deck.shift();
       } else if (board.cards.length < 12) {
         board.cards.push(deck.shift());
       }
@@ -256,13 +250,22 @@ function draw() {
   scoreArea.paint();
 }
 
+function findEmptySlot() {
+  // return board.cards.indexOf(undefined);
+  let emptySpots = [];
+  for (let i = 0; i < 12; i++) if (board.cards[i] === undefined) emptySpots.push(i);
+  if (emptySpots.length == 0) return -1;
+  return random(emptySpots);
+}
+
 function drawBoard(cutSet, fadeColor) {
   let x = (dimensions.w + dimensions.ws) / 2;
   let y;
   const w = dimensions.w;
   const h = dimensions.h;
   board.bounds = [];
-  board.cards.forEach((card, i) => {
+  for (let i = 0; i < 12; i++) {
+    const card = board.cards[i];
     if (i % 4 == 0) {
       y = dimensions.hs / 2 + h / 2;
       if (i > 0) x += dimensions.w + dimensions.ws;
@@ -276,7 +279,7 @@ function drawBoard(cutSet, fadeColor) {
         card.fade(fadeColor);
     }
     y += dimensions.hs + h;
-  });
+  }
 }
 
 function drawSets() {
@@ -299,6 +302,16 @@ function isCorrect([c1, c2, c3]) {
   const fill = countUniques(c1.fill, c2.fill, c3.fill) != 2;
   const color = countUniques(c1.color, c2.color, c3.color) != 2;
   return [letter, count, fill, color];
+}
+
+function updateBackgrounds() {
+  cardBackgrounds[Fill.Striped] = updateStripedBackground(
+    cardBackgrounds[Fill.Striped]
+  );
+  cardBackgrounds[Fill.Checker] = updateCheckerBackground(
+    cardBackgrounds[Fill.Checker]
+  );
+  cardBackgrounds[Fill.Wave] = updateWaveBackground(cardBackgrounds[Fill.Wave]);
 }
 
 const Fill = {
