@@ -19,6 +19,7 @@ let cutScene = 0;
 const dimensions = {};
 const cardBackgrounds = {};
 const animationSpeed = 25000;
+let bgColor = [() => 255, () => 255, () => 255];
 
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight);
@@ -188,8 +189,16 @@ function triggerCutScene() {
   cutSet = findCorrectSetIn(board.cards);
 }
 
+function colorBounce() {
+    const eventTime = millis()
+    return (now) => {
+      const elapsedTime = now - eventTime
+      return constrain(100-elapsedTime/5, 50, 75) + constrain((elapsedTime-250)/5, 0, 255)
+    }
+}
+
 function draw() {
-  background(255);
+  background(color(bgColor[0](millis()), bgColor[1](millis()), bgColor[2](millis())));
   cardBackgrounds[Fill.Striped] = updateStripedBackground(
     cardBackgrounds[Fill.Striped]
   );

@@ -15,6 +15,8 @@ class Player {
         this.higestReportedScore = this.points;
         reportScore(this);
       }
+      if (s < 0) bgColor[1] = bgColor[2] = colorBounce()
+      else bgColor[0] = bgColor[2] = colorBounce()
     }
     return this.points;
   }
