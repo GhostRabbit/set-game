@@ -6,6 +6,7 @@ class Player {
     this.higestReportedScore = 0;
     this.totalPlayTime = 0;
     this.colorIndex = null;
+    this.calculateAlphaColor()
   }
 
   score(s) {

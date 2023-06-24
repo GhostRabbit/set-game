@@ -12,7 +12,7 @@ let board = {
 let discard = [];
 let roundTime;
 let lastPickTime;
-const player = new Player();
+let player;
 let scoreArea;
 let splash;
 let cutScene = 0;
@@ -54,6 +54,7 @@ function init() {
   scoreArea = new ScoreArea();
   updateDimensions();
   initGraphics();
+  player = new Player()
 }
 
 
@@ -153,7 +154,7 @@ function pickUpSet(set) {
     board.cards[board.cards.indexOf(card)] = undefined;
   }
   makeSet(set).rateForScore();
-  if (board.sets.length > 6) {
+  while (board.sets.length > 3) {
     board.sets.shift().discard();
   }
 }
