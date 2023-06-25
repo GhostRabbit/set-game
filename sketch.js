@@ -15,7 +15,7 @@ let lastPickTime;
 let player;
 let scoreArea;
 let splash;
-let cutScene = 0;
+let fadeTtl = 0;
 const dimensions = {};
 const cardBackgrounds = {};
 const animationSpeed = 25000;
@@ -92,7 +92,7 @@ function mouseClicked(event) {
   const y = event.clientY;
 
   // In cutscene?
-  if (cutScene > 0) return;
+  if (fadeTtl > 0) return;
 
   // In splash mode?
   if (splash) {
@@ -120,8 +120,14 @@ function mouseClicked(event) {
   // In NoSetBUtton?
   if (scoreArea.noSetButton.covers(x, y)) {
     if (boardIsFull()) {
-      player.declaredNoSet = true;
-      triggerCutScene();
+      triggerFadeScene();
+      if (leftoverSet.length > 0) {
+        // minus for missed set
+        // minus for wrongly declare set whwn there was none
+        player.score(-2);
+      }
+      // Bonus for declararation when no set exist
+      else player.score(1);
     }
     return;
   }
@@ -166,7 +172,8 @@ function makeSet(set) {
 }
 
 function boardIsFull() {
-  return board.cards.length == 12 && board.cards.indexOf(undefined) == -1;
+  for (let i = 0; i < 12; i++) if (board.cards[i] === undefined) return false;
+  return true;
 }
 
 function clearBoard() {
@@ -185,39 +192,34 @@ function resetTimer() {
   roundTime = 75;
 }
 
-function triggerCutScene() {
-  cutScene = 5000;
-  cutSet = findCorrectSetIn(board.cards);
+function triggerFadeScene() {
+  fadeTtl = 5000;
+  leftoverSet = findCorrectSetIn(board.cards);
 }
 
 function colorBounce() {
   const eventTime = millis();
+  const darkerTime = 300;
+  const darkestPoint = 75;
+  const lighterTime = 600;
   return (now) => {
     const elapsedTime = now - eventTime;
-    return constrain(100 - elapsedTime / 5, 50, 75) + constrain((elapsedTime - 250) / 5, 0, 255);
+    return map(constrain(darkerTime - elapsedTime, 0, darkerTime), 0, darkerTime, darkestPoint, 255) + // darker
+      constrain((elapsedTime - darkerTime) * (255 - darkestPoint) / lighterTime, 0, 255 - darkestPoint);  // lighter
   };
 }
 
 function draw() {
-  background(color(bgColor[0](millis()), bgColor[1](millis()), bgColor[2](millis())));
+  background(bgColor[0](millis()), bgColor[1](millis()), bgColor[2](millis()));
   updateBackgrounds();
 
-  if (cutScene > 0) {
-    cutScene -= deltaTime;
-    let x = cutScene / 5000.0;
-    let col = color('rgba(255,255,255,' + (1.0 - x * x) + ')');
-    drawBoard(cutSet, col);
-    if (cutScene <= 0) {
+  if (fadeTtl > 0) {
+    fadeTtl -= deltaTime;
+    let x = fadeTtl / 5000.0;
+    let col = color(255, 255, 255, 255 * (1.0 - x * x));
+    drawBoard(leftoverSet, col);
+    if (fadeTtl <= 0) {
       clearBoard();
-      if (cutSet.length > 0) {
-        // minus for missed set
-        player.score(-1);
-        // minus for wrongly declaration
-        if (player.declaredNoSet) player.score(-1);
-      }
-      // Bonus for declararation when no set exist
-      else if (player.declaredNoSet) player.score(1);
-      player.declaredNoSet = false;
     }
   }
   else {
@@ -242,7 +244,13 @@ function draw() {
         player.totalPlayTime++;
       }
       lastPickTime = second();
-      if (roundTime == 0) triggerCutScene();
+      if (roundTime == 0) {
+        triggerFadeScene();
+        if (leftoverSet.length > 0) {
+          // minus for missed set
+          player.score(-1);
+        }
+      }
     }
     drawBoard();
   }
@@ -251,14 +259,13 @@ function draw() {
 }
 
 function findEmptySlot() {
-  // return board.cards.indexOf(undefined);
   let emptySpots = [];
   for (let i = 0; i < 12; i++) if (board.cards[i] === undefined) emptySpots.push(i);
   if (emptySpots.length == 0) return -1;
   return random(emptySpots);
 }
 
-function drawBoard(cutSet, fadeColor) {
+function drawBoard(leftoverSet, fadeColor) {
   let x = (dimensions.w + dimensions.ws) / 2;
   let y;
   const w = dimensions.w;
@@ -275,7 +282,7 @@ function drawBoard(cutSet, fadeColor) {
         card.paint(x, y, 1.0, player.colorAlfa);
       else
         card.paint(x, y, 1.0);
-      if (cutSet && !cutSet.includes(card))
+      if (leftoverSet && !leftoverSet.includes(card))
         card.fade(fadeColor);
     }
     y += dimensions.hs + h;
